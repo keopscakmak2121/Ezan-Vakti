@@ -1,7 +1,6 @@
 {
-  "name": "kuran-app",
+  "name": "ezan-vakti",
   "version": "0.2.0",
-  "homepage": ".",
   "private": true,
   "dependencies": {
     "@capacitor/android": "^7.4.3",
@@ -21,6 +20,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
+    "patch-package": "^8.0.1",
+    "typescript": "^5.9.3",
     "vite": "^5.3.1"
   },
   "scripts": {
@@ -50,4 +51,4 @@
       "last 1 safari version"
     ]
   }
-} 
+}

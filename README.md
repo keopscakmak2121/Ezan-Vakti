@@ -1,2 +1,2 @@
-# kuran-app
-kuran-app
+# Ezan Vakti
+Ezan Vakti

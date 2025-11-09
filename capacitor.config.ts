@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.quran.kerim',
   appName: 'Kuran-ı Kerim',
-  webDir: 'build',
+  webDir: 'dist', // Corrected back to 'dist' to match the build output
   plugins: {
     LocalNotifications: {
       smallIcon: 'ic_stat_mosque',
