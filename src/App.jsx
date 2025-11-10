@@ -5,11 +5,11 @@ import HomePage from './components/home/HomePage.jsx';
 import SurahList from './components/SurahList.jsx';
 import QuranReader from './components/QuranReader.jsx';
 import Settings from './components/Settings.jsx';
-import Navigation, { menuItems } from './components/Navigation.jsx'; // Import menuItems
+import Navigation, { menuItems } from './components/Navigation.jsx';
 
 const App = () => {
   const [currentView, setCurrentView] = useState('home');
-  const [isMenuOpen, setMenuOpen] = useState(false);
+  const [selectedSurah, setSelectedSurah] = useState(null);
   const [frequentItems, setFrequentItems] = useState([]);
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -18,21 +18,17 @@ const App = () => {
     } catch { return false; }
   });
 
-  const [selectedSurah, setSelectedSurah] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '' });
   const backButtonReady = useRef(false);
 
-  // Add hardware back button listener
   useEffect(() => {
     const registerBackButtonListener = async () => {
       const listener = await CapacitorApp.addListener('backButton', () => {
-        if (isMenuOpen) {
-          setMenuOpen(false);
+        if (selectedSurah) { // If in reader, go back to list
+          setSelectedSurah(null);
         } else if (currentView !== 'home') {
           setCurrentView('home');
-          setSelectedSurah(null);
         } else {
-          // Handle exit confirmation on home screen
           if (backButtonReady.current) {
             CapacitorApp.exitApp();
           } else {
@@ -47,10 +43,7 @@ const App = () => {
       });
       return listener;
     };
-
     const listenerPromise = registerBackButtonListener();
-
-    // Clean up the listener
     return () => {
       const unregister = async () => {
         const listener = await listenerPromise;
@@ -58,21 +51,17 @@ const App = () => {
       };
       unregister();
     };
-  }, [currentView, isMenuOpen]);
+  }, [currentView, selectedSurah]);
 
-  // Function to track usage
   const trackUsage = (view) => {
     try {
       const stats = JSON.parse(localStorage.getItem('navigation_stats') || '{}');
       stats[view] = (stats[view] || 0) + 1;
       localStorage.setItem('navigation_stats', JSON.stringify(stats));
       updateFrequentItems();
-    } catch (e) {
-      console.error("Failed to track usage:", e);
-    }
+    } catch (e) { console.error("Failed to track usage:", e); }
   };
 
-  // Function to update frequent items state
   const updateFrequentItems = () => {
     try {
       const stats = JSON.parse(localStorage.getItem('navigation_stats') || '{}');
@@ -80,53 +69,46 @@ const App = () => {
         .filter(id => id !== 'home' && id !== 'menu')
         .sort((a, b) => stats[b] - stats[a]);
       setFrequentItems(sortedItems.slice(0, 3));
-    } catch (e) {
-      console.error("Failed to update frequent items:", e);
-    }
+    } catch (e) { console.error("Failed to update frequent items:", e); }
   };
 
-  // Load frequent items on initial render
   useEffect(() => {
     updateFrequentItems();
   }, []);
 
   const handleNavigate = (view) => {
-    if (view === 'menu') {
-      setMenuOpen(!isMenuOpen);
-    } else {
-      trackUsage(view);
-      setCurrentView(view);
-      setMenuOpen(false);
-      if (view !== 'quran') {
-        setSelectedSurah(null);
-      }
-    }
-  };
-
-  const handleMenuNavigate = (view) => {
     trackUsage(view);
     setCurrentView(view);
-    setMenuOpen(false);
+    if (view !== 'quran') {
+      setSelectedSurah(null);
+    }
   };
+  
+  const handleSurahClick = (surahNumber) => {
+    setSelectedSurah(surahNumber);
+  }
 
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
-    // ... (rest of the function is unchanged)
   };
 
-  const bg = darkMode ? '#1f2937' : '#f9fafb'; // Updated light mode background
+  const bg = darkMode ? '#1f2937' : '#f9fafb';
 
   const renderCurrentView = () => {
+    if (selectedSurah) {
+        return <QuranReader surahNumber={selectedSurah} darkMode={darkMode} onBack={() => setSelectedSurah(null)} />;
+    }
+
     switch (currentView) {
       case 'home':
         return <HomePage darkMode={darkMode} onNavigate={handleNavigate} />;
       case 'quran':
-        return selectedSurah ? 
-               <QuranReader surah={selectedSurah} darkMode={darkMode} onBack={() => setSelectedSurah(null)} /> : 
-               <SurahList onSurahClick={setSelectedSurah} darkMode={darkMode} />;
+        return <SurahList onSurahClick={handleSurahClick} darkMode={darkMode} />;
       case 'settings':
         return <Settings darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
+      case 'menu':
+        return <Navigation darkMode={darkMode} onNavigate={handleNavigate} />;
       default:
         return (
           <div style={{textAlign: 'center', paddingTop: '50px', color: darkMode ? 'white' : 'black'}}>
@@ -139,7 +121,7 @@ const App = () => {
 
   const toastStyles = {
     position: 'fixed',
-    bottom: '80px', // Positioned above the tab bar
+    bottom: '80px',
     left: '50%',
     transform: 'translateX(-50%)',
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -153,15 +135,11 @@ const App = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: bg }}>
-      {isMenuOpen && <div style={{position:'fixed', top: 0, left:0, right:0, bottom: 0, background:'rgba(0,0,0,0.5)', zIndex: 99}} onClick={() => setMenuOpen(false)}></div>}
-      {isMenuOpen && <div style={{position:'fixed', top: '10%', left:10, right:10, zIndex:100}}><Navigation darkMode={darkMode} onNavigate={handleMenuNavigate} currentView={currentView} /></div>}
-      
-      <div style={{ padding: '10px', paddingBottom: '70px' }}>
+    <div style={{ height: '100vh', backgroundColor: bg, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '70px' }}>
         {renderCurrentView()}
       </div>
       
-      {/* Toast Notification */}
       <div style={toastStyles}>
         {toast.message}
       </div>

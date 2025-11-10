@@ -13,57 +13,65 @@ export const menuItems = [
   { id: 'settings', icon: '⚙️', text: 'Ayarlar' }
 ];
 
-const Navigation = ({ currentView, onNavigate, darkMode }) => {
+const Navigation = ({ onNavigate, darkMode }) => {
+
+  const styles = {
+    container: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)', // Two columns
+      gap: '15px',
+      padding: '10px', 
+    },
+    card: {
+      backgroundColor: darkMode ? '#374151' : '#ffffff',
+      borderRadius: '16px',
+      padding: '20px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+      border: `1px solid ${darkMode ? '#4b5563' : '#e5e7eb'}`,
+      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
+      color: darkMode ? '#f3f4f6' : '#1f2937',
+      transition: 'transform 0.2s ease-in-out',
+      minHeight: '100px',
+    },
+    icon: {
+      fontSize: '32px',
+      marginBottom: '10px',
+    },
+    text: {
+      fontSize: '16px',
+      fontWeight: '600',
+      textAlign: 'center',
+    }
+  };
 
   return (
-    <nav style={{
-      backgroundColor: darkMode ? '#1f2937' : 'white',
-      padding: '10px',
-      borderRadius: '12px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      marginBottom: '20px'
-    }}>
-      <div style={{
-        display: 'flex',
-        gap: '10px',
-        flexWrap: 'wrap',
-        justifyContent: 'center'
-      }}>
+    <div>
+      <h2 style={{ 
+        color: darkMode ? '#f3f4f6' : '#1f2937',
+        textAlign: 'center',
+        padding: '20px 10px 10px 10px',
+        fontSize: '24px'
+      }}>Menü</h2>
+      <div style={styles.container}>
         {menuItems.map(item => (
-          <button
-            key={item.id}
+          <div 
+            key={item.id} 
+            style={styles.card} 
             onClick={() => onNavigate(item.id)}
-            style={{
-              padding: '10px 15px',
-              backgroundColor: currentView === item.id ? '#059669' : (darkMode ? '#374151' : '#f3f4f6'),
-              color: currentView === item.id ? 'white' : (darkMode ? '#f3f4f6' : '#1f2937'),
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              if (currentView !== item.id) {
-                e.target.style.backgroundColor = darkMode ? '#4b5563' : '#e5e7eb';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (currentView !== item.id) {
-                e.target.style.backgroundColor = darkMode ? '#374151' : '#f3f4f6';
-              }
-            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <span style={{ fontSize: '18px' }}>{item.icon}</span>
-            <span>{item.text}</span>
-          </button>
+            <div style={styles.icon}>{item.icon}</div>
+            <div style={styles.text}>{item.text}</div>
+          </div>
         ))}
       </div>
-    </nav>
+    </div>
   );
 };
 
-export default Navigation; 
+export default Navigation;
