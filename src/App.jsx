@@ -115,7 +115,7 @@ const App = () => {
     // ... (rest of the function is unchanged)
   };
 
-  const bg = darkMode ? '#1f2937' : '#f3f4f6';
+  const bg = darkMode ? '#1f2937' : '#f9fafb'; // Updated light mode background
 
   const renderCurrentView = () => {
     switch (currentView) {

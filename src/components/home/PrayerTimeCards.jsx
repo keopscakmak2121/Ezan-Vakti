@@ -1,5 +1,3 @@
-// src/components/home/PrayerTimeCards.jsx
-
 import React from 'react';
 import { isPrayerTimePassed, getNextPrayer } from '../../utils/prayerTimesApi.js';
 
@@ -34,7 +32,8 @@ const PrayerTimeCards = ({ prayerTimes, darkMode }) => {
 
         return (
           <div key={prayer.key} style={chipStyle}>
-            <div style={{ ...styles(darkMode).icon, filter: isNext ? 'none' : (darkMode ? 'grayscale(1)' : 'none') }}>{prayer.icon}</div>
+            {/* In light mode, icons for passed times are also less visible */}
+            <div style={{ ...styles(darkMode).icon, opacity: (isPassed && !isNext) ? 0.5 : 1, filter: isNext ? 'none' : (darkMode ? 'grayscale(1)' : 'none') }}>{prayer.icon}</div>
             <div style={{ ...styles(darkMode).prayerName, ...(isNext && styles(darkMode).nextText) }}>{prayer.name}</div>
             <div style={{ ...styles(darkMode).time, ...(isNext && styles(darkMode).nextText) }}>{time}</div>
           </div>
@@ -49,6 +48,7 @@ const styles = (darkMode) => ({
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '12px',
+    marginTop: '20px', // Add space between the main card and these small cards
   },
   chip: {
     background: darkMode ? '#374151' : '#ffffff',
@@ -56,7 +56,8 @@ const styles = (darkMode) => ({
     padding: '10px',
     textAlign: 'center',
     border: `1px solid ${darkMode ? '#4b5563' : '#e5e7eb'}`,
-    boxShadow: darkMode ? `3px 3px 5px #2d3748, -3px -3px 5px #414b5a` : `4px 4px 8px #d1d5db, -4px -4px 8px #ffffff`,
+    // Use a more modern, consistent shadow for the light theme
+    boxShadow: darkMode ? `3px 3px 5px #2d3748, -3px -3px 5px #414b5a` : '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
     transition: 'all 0.3s ease',
     display: 'flex',
     flexDirection: 'column',
@@ -64,11 +65,14 @@ const styles = (darkMode) => ({
     justifyContent: 'center',
   },
   passedChip: {
-    opacity: 0.6,
-    boxShadow: 'none',
-    background: darkMode ? '#323c4a' : '#f3f4f6',
+    opacity: 0.65,
+    // In light mode, a slightly off-white background looks better than gray for passed items
+    background: darkMode ? '#323c4a' : '#f9fafb',
+    boxShadow: 'none', // No shadow for passed items to make them recede
+    border: `1px solid ${darkMode ? '#404a58' : '#f3f4f6'}`,
   },
   nextChip: {
+    opacity: 1, // Ensure next prayer is fully opaque
     background: `linear-gradient(145deg, ${darkMode ? '#10b981' : '#10b981'}, ${darkMode ? '#059669' : '#059669'})`,
     borderColor: darkMode ? '#10b981' : '#059669',
     transform: 'translateY(-2px)',
@@ -77,7 +81,6 @@ const styles = (darkMode) => ({
   icon: {
     fontSize: '20px',
     marginBottom: '4px',
-    opacity: 0.8,
   },
   prayerName: {
     fontSize: '12px',
