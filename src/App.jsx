@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 import TabBar from './components/TabBar.jsx';
 import HomePage from './components/home/HomePage.jsx';
@@ -19,23 +19,44 @@ const App = () => {
   });
 
   const [selectedSurah, setSelectedSurah] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '' });
+  const backButtonReady = useRef(false);
 
   // Add hardware back button listener
   useEffect(() => {
-    const listener = CapacitorApp.addListener('backButton', (e) => {
-      if (isMenuOpen) {
-        e.preventDefault();
-        setMenuOpen(false);
-      } else if (currentView !== 'home') {
-        e.preventDefault();
-        setCurrentView('home');
-        setSelectedSurah(null);
-      }
-    });
+    const registerBackButtonListener = async () => {
+      const listener = await CapacitorApp.addListener('backButton', () => {
+        if (isMenuOpen) {
+          setMenuOpen(false);
+        } else if (currentView !== 'home') {
+          setCurrentView('home');
+          setSelectedSurah(null);
+        } else {
+          // Handle exit confirmation on home screen
+          if (backButtonReady.current) {
+            CapacitorApp.exitApp();
+          } else {
+            backButtonReady.current = true;
+            setToast({ show: true, message: 'Çıkmak için tekrar basın' });
+            setTimeout(() => {
+              setToast({ show: false, message: '' });
+              backButtonReady.current = false;
+            }, 2000);
+          }
+        }
+      });
+      return listener;
+    };
 
-    // Clean up the listener when the component unmounts
+    const listenerPromise = registerBackButtonListener();
+
+    // Clean up the listener
     return () => {
-      listener.remove();
+      const unregister = async () => {
+        const listener = await listenerPromise;
+        listener.remove();
+      };
+      unregister();
     };
   }, [currentView, isMenuOpen]);
 
@@ -45,7 +66,7 @@ const App = () => {
       const stats = JSON.parse(localStorage.getItem('navigation_stats') || '{}');
       stats[view] = (stats[view] || 0) + 1;
       localStorage.setItem('navigation_stats', JSON.stringify(stats));
-      updateFrequentItems(); // Update highlights on the fly
+      updateFrequentItems();
     } catch (e) {
       console.error("Failed to track usage:", e);
     }
@@ -56,9 +77,9 @@ const App = () => {
     try {
       const stats = JSON.parse(localStorage.getItem('navigation_stats') || '{}');
       const sortedItems = Object.keys(stats)
-        .filter(id => id !== 'home' && id !== 'menu') // Exclude non-menu items
+        .filter(id => id !== 'home' && id !== 'menu')
         .sort((a, b) => stats[b] - stats[a]);
-      setFrequentItems(sortedItems.slice(0, 3)); // Get top 3
+      setFrequentItems(sortedItems.slice(0, 3));
     } catch (e) {
       console.error("Failed to update frequent items:", e);
     }
@@ -97,7 +118,6 @@ const App = () => {
   const bg = darkMode ? '#1f2937' : '#f3f4f6';
 
   const renderCurrentView = () => {
-    // ... (rest of the function is unchanged)
     switch (currentView) {
       case 'home':
         return <HomePage darkMode={darkMode} onNavigate={handleNavigate} />;
@@ -117,9 +137,23 @@ const App = () => {
     }
   }
 
+  const toastStyles = {
+    position: 'fixed',
+    bottom: '80px', // Positioned above the tab bar
+    left: '50%',
+    transform: 'translateX(-50%)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    color: 'white',
+    padding: '10px 20px',
+    borderRadius: '20px',
+    zIndex: 200,
+    transition: 'opacity 0.3s',
+    opacity: toast.show ? 1 : 0,
+    pointerEvents: toast.show ? 'auto' : 'none',
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg }}>
-      <h1 style={{color: 'red', textAlign: 'center', position: 'absolute', top: 0, width: '100%', zIndex: 9999}}>TEST GÖRÜNÜYOR MU?</h1>
       {isMenuOpen && <div style={{position:'fixed', top: 0, left:0, right:0, bottom: 0, background:'rgba(0,0,0,0.5)', zIndex: 99}} onClick={() => setMenuOpen(false)}></div>}
       {isMenuOpen && <div style={{position:'fixed', top: '10%', left:10, right:10, zIndex:100}}><Navigation darkMode={darkMode} onNavigate={handleMenuNavigate} currentView={currentView} /></div>}
       
@@ -127,12 +161,17 @@ const App = () => {
         {renderCurrentView()}
       </div>
       
+      {/* Toast Notification */}
+      <div style={toastStyles}>
+        {toast.message}
+      </div>
+
       <TabBar 
         darkMode={darkMode} 
         onNavigate={handleNavigate} 
         currentView={currentView} 
         frequentItems={frequentItems}
-        menuItems={menuItems} // Pass the original menu items for icon lookup
+        menuItems={menuItems}
       />
     </div>
   );
