@@ -1,14 +1,16 @@
-// src/components/home/NextPrayerCard.jsx - CLEANED UP VERSION
 
 import React from 'react';
-import { prayerImages } from './prayerImages.js'; // Import images from the new file
+import { prayerImages } from './prayerImages.js';
 
 const NextPrayerCard = ({ nextPrayer, countdown, locationName }) => {
 
   const isLoading = !nextPrayer;
   const prayerName = isLoading ? 'Yükleniyor...' : nextPrayer.name;
   const prayerTime = isLoading ? '--:--' : nextPrayer.time;
-  const imageUrl = isLoading ? prayerImages['default'] : (prayerImages[prayerName] || prayerImages['default']);
+  
+  // En basit ve en sağlam yöntem:
+  // Vakit adını kullanarak doğrudan ilgili resmi al. Bulamazsan varsayılanı kullan.
+  const imageUrl = prayerImages[prayerName] || prayerImages.default;
 
   const cardStyle = {
     borderRadius: '16px',

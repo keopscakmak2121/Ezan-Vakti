@@ -1,20 +1,19 @@
-// src/components/Navigation.js
 import React from 'react';
 
+export const menuItems = [
+  { id: 'quran', icon: '📖', text: 'Kuran Oku' },
+  { id: 'esma', icon: '✨', text: 'Esmaül Hüsna' },
+  { id: 'search', icon: '🔍', text: 'Ayet Ara' },
+  { id: 'bookmarks', icon: '⭐', text: 'Yer İmleri' },
+  { id: 'notes', icon: '📝', text: 'Notlarım' },
+  { id: 'downloads', icon: '💾', text: 'İndirilenler' },
+  { id: 'prayerTimes', icon: '🕌', text: 'Namaz Vakitleri' },
+  { id: 'qibla', icon: '🧭', text: 'Kıble' },
+  { id: 'stats', icon: '📊', text: 'İstatistikler' },
+  { id: 'settings', icon: '⚙️', text: 'Ayarlar' }
+];
+
 const Navigation = ({ currentView, onNavigate, darkMode }) => {
-  const menuItems = [
-    { id: 'home', icon: '🏠', text: 'Ana Sayfa' },
-    { id: 'quran', icon: '📖', text: 'Kuran Oku' },
-    { id: 'esma', icon: '✨', text: 'Esmaül Hüsna' },
-    { id: 'search', icon: '🔍', text: 'Ayet Ara' },
-    { id: 'bookmarks', icon: '⭐', text: 'Yer İmleri' },
-    { id: 'notes', icon: '📝', text: 'Notlarım' },
-    { id: 'downloads', icon: '💾', text: 'İndirilenler' },
-    { id: 'prayerTimes', icon: '🕌', text: 'Namaz Vakitleri' },
-    { id: 'qibla', icon: '🧭', text: 'Kıble' },
-    { id: 'stats', icon: '📊', text: 'İstatistikler' },
-    { id: 'settings', icon: '⚙️', text: 'Ayarlar' }
-  ];
 
   return (
     <nav style={{
