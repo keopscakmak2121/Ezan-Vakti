@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getSettings, saveSettings } from '../../utils/settingsStorage.js';
 import { addBookmark, removeBookmarkByAyah, isBookmarked } from '../../utils/bookmarkStorage.js';
-import { getNote, saveNote } from '../utils/noteStorage.js';
-import AyahCard from './quran/AyahCard';
-import QuranSettings from './quran/QuranSettings'; 
-import SurahHeader from './quran/SurahHeader'; 
-import NoteModal from './quran/NoteModal';
+import { getNote, saveNote } from '../../utils/noteStorage.js'; // Corrected Path
+import AyahCard from './AyahCard';
+import QuranSettings from './QuranSettings'; 
+import SurahHeader from './SurahHeader'; 
+import NoteModal from './NoteModal';
 
 const QuranReader = ({ surahNumber, darkMode, onBack }) => {
   const [surahData, setSurahData] = useState(null);
@@ -19,7 +19,6 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
   const observer = useRef();
   const AYAH_PER_PAGE = 15;
 
-  // ... other states ...
   const [currentAyah, setCurrentAyah] = useState(null);
   const [copiedAyah, setCopiedAyah] = useState(null);
   const [bookmarkedAyahs, setBookmarkedAyahs] = useState({});
@@ -47,7 +46,7 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
   const fetchSurah = async (translationId) => {
     try {
       setLoading(true);
-      setAllVerses([]); // Clear previous verses immediately
+      setAllVerses([]);
       setRenderedVerses([]);
       setPage(1);
 
@@ -56,7 +55,6 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
       if(surahInfoData.code !== 200) throw new Error('Sure bilgileri alınamadı');
       setSurahData(surahInfoData.data);
       
-      // CACHE BUSTER: Add a unique timestamp to every request to prevent caching
       const cacheBuster = `&_=${new Date().getTime()}`;
       const editions = `quran-simple,${translationId}`;
       const contentRes = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/editions/${editions}?${cacheBuster}`);
@@ -80,7 +78,6 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
     }
   };
 
-  // ... other functions ...
   const loadMoreVerses = useCallback(()=>{/*...*/},[/*...*/]);
   const lastAyahElementRef = useCallback(node=>{/*...*/},[/*...*/]);
   const loadBookmarks = () => {};
@@ -91,7 +88,6 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
   const openNoteModal = () => {};
   const saveNoteHandler = () => {};
   const closeNoteModal = () => {};
-
 
   if (showSettings) {
     return <QuranSettings darkMode={darkMode} settings={settings} onSettingsChange={handleSettingsChange} onBack={() => setShowSettings(false)} />;
@@ -111,7 +107,16 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '10px' }}>
         {renderedVerses.map((ayah, index) => (
           <div ref={index === renderedVerses.length - 1 ? lastAyahElementRef : null} key={ayah.globalNumber}>
-            <AyahCard ayah={ayah} surahName={surahData.englishName} settings={settings} darkMode={darkMode} onPlay={() => playAyah(ayah.number)} onCopy={() => copyAyah(ayah)} onToggleBookmark={() => toggleBookmark(ayah)} onOpenNote={() => openNoteModal(ayah)} />
+            <AyahCard
+              ayah={ayah}
+              surahName={surahData.englishName}
+              settings={settings}
+              darkMode={darkMode}
+              onPlay={() => playAyah(ayah.number)}
+              onCopy={() => copyAyah(ayah)}
+              onToggleBookmark={() => toggleBookmark(ayah)}
+              onOpenNote={() => openNoteModal(ayah)}
+            />
           </div>
         ))}
       </div>

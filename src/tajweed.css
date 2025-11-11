@@ -1,0 +1,16 @@
+/* Quran.com Tajweed CSS */
+.tajweed-text .madda_normal { color: #537FFF; }
+.tajweed-text .madda_permissible { color: #4050FF; }
+.tajweed-text .madda_necessary { color: #000EBC; }
+.tajweed-text .qalaqah { color: #DD0008; }
+.tajweed-text .madda_obligatory { color: #FF0000; }
+.tajweed-text .ikhafa_shafawi { color: #D500B7; }
+.tajweed_text .ikhafa { color: #9400A8; }
+.tajweed-text .idgham_shafawi { color: #58B800; }
+.tajweed-text .idgham_with_ghunnah { color: #169200; }
+.tajweed-text .idgham_without_ghunnah { color: #169200; }
+.tajweed-text .idgham_mutajanisayn { color: #169200; }
+.tajweed-text .idgham_mutaqaribayn { color: #169200; }
+.tajweed-text .iqlab { color: #2800A2; }
+.tajweed-text .ghunnah { color: #FF7E1E; }
+.ham_wasl, .slnt, .slnt-1 { color: #AAAAAA; }
