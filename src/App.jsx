@@ -88,9 +88,17 @@ const App = () => {
     setSelectedSurah(surahNumber);
   }
 
+  // FIXED: This function now saves the dark mode setting
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
+    try {
+      const settings = JSON.parse(localStorage.getItem('quran_settings') || '{}');
+      settings.darkMode = newDarkMode;
+      localStorage.setItem('quran_settings', JSON.stringify(settings));
+    } catch (e) {
+      console.error("Failed to save dark mode setting:", e);
+    }
   };
 
   const bg = darkMode ? '#1f2937' : '#f9fafb';
