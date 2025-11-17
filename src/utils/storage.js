@@ -1,31 +1,39 @@
-export const storage = {
-  get: (key, defaultValue = null) => {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
-    } catch (error) {
-      console.error('Storage get error:', error);
-      return defaultValue;
-    }
-  },
 
-  set: (key, value) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-      return true;
-    } catch (error) {
-      console.error('Storage set error:', error);
-      return false;
-    }
-  },
+// src/utils/storage.js
 
-  remove: (key) => {
-    try {
-      localStorage.removeItem(key);
-      return true;
-    } catch (error) {
-      console.error('Storage remove error:', error);
-      return false;
+/**
+ * Retrieves prayer times data from localStorage if it's from today.
+ * @returns {object|null} The stored data or null if not found or outdated.
+ */
+export const getStoredPrayerTimes = () => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const storedData = JSON.parse(localStorage.getItem('prayerTimesData'));
+
+    if (storedData && storedData.date === today && storedData.locationName && storedData.locationName !== 'Konum') {
+      return storedData;
     }
+  } catch (e) {
+    console.error("Failed to read from localStorage:", e);
   }
-}; 
+  return null;
+};
+
+/**
+ * Stores prayer times data in localStorage.
+ * @param {object} timings The prayer times object.
+ * @param {string} locationName The name of the location.
+ */
+export const storePrayerTimes = (timings, locationName) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const dataToStore = {
+      date: today,
+      timings: timings,
+      locationName: locationName,
+    };
+    localStorage.setItem('prayerTimesData', JSON.stringify(dataToStore));
+  } catch (e) {
+    console.error("Failed to write to localStorage:", e);
+  }
+};

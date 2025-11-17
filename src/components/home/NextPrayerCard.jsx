@@ -1,12 +1,12 @@
 import React from 'react';
-import { prayerImages } from './prayerImages.js';
+import getImageForPrayer from './prayerImages.js';
 
 const NextPrayerCard = ({ nextPrayer, countdown, locationName, darkMode }) => {
 
   const isLoading = !nextPrayer;
   const prayerName = isLoading ? 'Yükleniyor...' : nextPrayer.name;
   const prayerTime = isLoading ? '--:--' : nextPrayer.time;
-  const imageUrl = prayerImages[prayerName] || prayerImages.default;
+  const imageUrl = getImageForPrayer(prayerName);
 
   // Base styles that apply to both themes
   const baseCardStyle = {

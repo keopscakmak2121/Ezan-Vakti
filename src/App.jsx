@@ -4,14 +4,16 @@ import TabBar from './components/TabBar.jsx';
 import HomePage from './components/home/HomePage.jsx';
 import SurahList from './components/SurahList.jsx';
 import QuranReader from './components/quran/QuranReader.jsx';
-import JuzReader from './components/quran/JuzReader.jsx'; // Import the new Juz Reader
+import JuzReader from './components/quran/JuzReader.jsx';
 import Settings from './components/Settings.jsx';
 import Navigation, { menuItems } from './components/Navigation.jsx';
 
 const App = () => {
-  const [currentView, setCurrentView] = useState('home');
+  const [viewHistory, setViewHistory] = useState(['home']);
+  const currentView = viewHistory[viewHistory.length - 1];
+
   const [selectedSurah, setSelectedSurah] = useState(null);
-  const [selectedJuz, setSelectedJuz] = useState(null); // State for selected Juz
+  const [selectedJuz, setSelectedJuz] = useState(null);
   const [frequentItems, setFrequentItems] = useState([]);
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -21,28 +23,42 @@ const App = () => {
   });
 
   const [toast, setToast] = useState({ show: false, message: '' });
-  const backButtonReady = useRef(false);
+  const backButtonExit = useRef(false);
+  const toastTimer = useRef(null);
+
+  useEffect(() => {
+    return () => { if (toastTimer.current) clearTimeout(toastTimer.current); };
+  }, []);
 
   useEffect(() => {
     const registerBackButtonListener = async () => {
-      const listener = await CapacitorApp.addListener('backButton', () => {
-        if (selectedJuz) { // If in Juz reader, go back
+      const listener = await CapacitorApp.addListener('backButton', (e) => {
+        e.preventDefault();
+
+        if (selectedJuz) {
           setSelectedJuz(null);
-        } else if (selectedSurah) { // If in Surah reader, go back
+        } else if (selectedSurah) {
           setSelectedSurah(null);
-        } else if (currentView !== 'home') {
-          setCurrentView('home');
+        } else if (viewHistory.length > 1) {
+          setViewHistory(prev => prev.slice(0, -1));
         } else {
-          if (backButtonReady.current) {
+          if (backButtonExit.current) {
             CapacitorApp.exitApp();
-          } else { /* ... toast logic ... */ }
+          } else {
+            backButtonExit.current = true;
+            setToast({ show: true, message: 'Çıkmak için tekrar dokunun' });
+            toastTimer.current = setTimeout(() => {
+              backButtonExit.current = false;
+              setToast({ show: false, message: '' });
+            }, 2000);
+          }
         }
       });
       return listener;
     };
     const listenerPromise = registerBackButtonListener();
-    return () => { /* ... cleanup ... */ };
-  }, [currentView, selectedSurah, selectedJuz]);
+    return () => { listenerPromise.then(l => l.remove()); };
+  }, [viewHistory, selectedSurah, selectedJuz]);
 
   const trackUsage = (view) => { /* ... */ };
   const updateFrequentItems = () => { /* ... */ };
@@ -50,9 +66,22 @@ const App = () => {
   useEffect(() => { updateFrequentItems(); }, []);
 
   const handleNavigate = (view) => {
-    trackUsage(view);
-    setCurrentView(view);
-    setSelectedSurah(null); // Reset other selections
+    if (view === currentView) {
+      return;
+    }
+  
+    const newHistory = [...viewHistory];
+    const existingIndex = newHistory.lastIndexOf(view);
+    
+    if (existingIndex > -1) {
+      // If the view already exists, trim the history to prevent loops.
+      setViewHistory(prev => prev.slice(0, existingIndex + 1));
+    } else {
+      // If it's a new view, add it to the history.
+      setViewHistory(prev => [...prev, view]);
+    }
+  
+    setSelectedSurah(null);
     setSelectedJuz(null);
   };
   
@@ -93,14 +122,27 @@ const App = () => {
     }
   }
 
-  const toastStyles = { /* ... */ };
+  const toastStyles = {
+    position: 'fixed',
+    bottom: '80px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    color: 'white',
+    padding: '10px 20px',
+    borderRadius: '20px',
+    zIndex: 1000,
+    visibility: toast.show ? 'visible' : 'hidden',
+    opacity: toast.show ? 1 : 0,
+    transition: 'visibility 0s, opacity 0.3s linear',
+  };
 
   return (
     <div style={{ height: '100vh', backgroundColor: bg, display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '70px' }}>
         {renderCurrentView()}
       </div>
-      <div style={toastStyles}>{/* ... */}</div>
+      <div style={toastStyles}>{toast.message}</div>
       <TabBar darkMode={darkMode} onNavigate={handleNavigate} currentView={currentView} frequentItems={frequentItems} menuItems={menuItems} />
     </div>
   );

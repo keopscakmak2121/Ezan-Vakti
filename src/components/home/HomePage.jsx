@@ -5,6 +5,7 @@ import NextPrayerCard from './NextPrayerCard.jsx';
 import PrayerTimeCards from './PrayerTimeCards.jsx';
 import TabPanel from './TabPanel.jsx';
 import { getPrayerTimesByCoordinates, getUserLocation, getNextPrayer, getCityFromCoordinates } from '../../utils/prayerTimesApi.js';
+import { getStoredPrayerTimes, storePrayerTimes } from '../../utils/storage.js';
 
 const calculateCountdown = (prayerTime, isTomorrow) => {
   if (!prayerTime) return null;
@@ -56,10 +57,9 @@ const HomePage = ({ darkMode, onNavigate }) => {
   const loadPrayerTimes = async () => {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const storedData = JSON.parse(localStorage.getItem('prayerTimesData'));
+      const storedData = getStoredPrayerTimes();
 
-      if (storedData && storedData.date === today && storedData.locationName && storedData.locationName !== 'Konum') {
+      if (storedData) {
         setPrayerTimes(storedData.timings);
         setNextPrayer(getNextPrayer(storedData.timings));
         setLocationName(storedData.locationName);
@@ -74,11 +74,7 @@ const HomePage = ({ darkMode, onNavigate }) => {
           setPrayerTimes(prayerResult.timings);
           setNextPrayer(getNextPrayer(prayerResult.timings));
           setLocationName(cityResult);
-          localStorage.setItem('prayerTimesData', JSON.stringify({ 
-            date: today, 
-            timings: prayerResult.timings,
-            locationName: cityResult
-          }));
+          storePrayerTimes(prayerResult.timings, cityResult);
         } else {
           throw new Error(prayerResult.message || 'Namaz vakitleri alınamadı.');
         }
