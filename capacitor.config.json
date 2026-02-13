@@ -1,0 +1,20 @@
+{
+  "appId": "com.quran.kerim",
+  "appName": "Ezan Vakti",
+  "webDir": "dist",
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_mosque",
+      "iconColor": "#059669",
+      "sound": "adhan1.mp3"
+    },
+    "PrayerWidgetPlugin": {
+      "enabled": true
+    }
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  }
+}
