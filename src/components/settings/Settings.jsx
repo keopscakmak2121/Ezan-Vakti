@@ -1,102 +1,94 @@
-// src/components/settings/Settings.jsx
+// src/components/settings/Settings.jsx - GÜNCELLENMİŞ VERSİYON
 
-import React from 'react';
-
-// A reusable Toggle Switch component
-const ToggleSwitch = ({ label, checked, onChange, darkMode }) => {
-  const styles = {
-    container: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '16px',
-      backgroundColor: darkMode ? '#374151' : '#ffffff',
-      borderRadius: '12px',
-      marginBottom: '10px',
-    },
-    label: {
-      fontSize: '16px',
-      fontWeight: '500',
-      color: darkMode ? '#f3f4f6' : '#1f2937',
-    },
-    switch: {
-      position: 'relative',
-      display: 'inline-block',
-      width: '50px',
-      height: '28px',
-    },
-    slider: {
-      position: 'absolute',
-      cursor: 'pointer',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: checked ? (darkMode ? '#10b981' : '#059669') : (darkMode ? '#4b5563' : '#ccc'),
-      transition: '.4s',
-      borderRadius: '28px',
-    },
-    sliderBefore: {
-      position: 'absolute',
-      content: '""', // CORRECTED: This was the source of the build error
-      height: '20px',
-      width: '20px',
-      left: '4px',
-      bottom: '4px',
-      backgroundColor: 'white',
-      transition: '.4s',
-      borderRadius: '50%',
-      transform: checked ? 'translateX(22px)' : 'translateX(0)',
-    },
-  };
-
-  return (
-    <div style={styles.container}>
-      <span style={styles.label}>{label}</span>
-      <label style={styles.switch}>
-        <input type="checkbox" checked={checked} onChange={onChange} style={{ opacity: 0, width: 0, height: 0 }} />
-        <span style={styles.slider}>
-          <span style={styles.sliderBefore}></span>
-        </span>
-      </label>
-    </div>
-  );
-};
+import React, { useState } from 'react';
+import { getNotificationSettings, saveNotificationSettings, SOUND_OPTIONS } from '../../utils/notificationStorage';
 
 const Settings = ({ darkMode, toggleDarkMode }) => {
+  const [notifSettings, setNotifSettings] = useState(getNotificationSettings());
+
+  const handleToggleNotif = () => {
+    const newSettings = { ...notifSettings, enabled: !notifSettings.enabled };
+    setNotifSettings(newSettings);
+    saveNotificationSettings(newSettings);
+  };
+
+  const handleSoundChange = (type, value) => {
+    const newSettings = { ...notifSettings, [type]: value };
+    setNotifSettings(newSettings);
+    saveNotificationSettings(newSettings);
+  };
+
   const styles = {
-    page: {
-      padding: '10px',
+    page: { padding: '20px', color: darkMode ? '#f9fafb' : '#111827' },
+    title: { fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' },
+    section: { marginBottom: '30px' },
+    sectionTitle: { fontSize: '16px', color: '#888', marginBottom: '10px', textTransform: 'uppercase' },
+    item: {
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '15px', backgroundColor: darkMode ? '#1f2937' : '#fff',
+      borderRadius: '12px', marginBottom: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
     },
-    title: {
-      fontSize: '28px',
-      fontWeight: 'bold',
-      color: darkMode ? '#f9fafb' : '#111827',
-      marginBottom: '24px',
-    },
-    sectionTitle: {
-      fontSize: '18px',
-      fontWeight: '600',
-      color: darkMode ? '#9ca3af' : '#6b7280',
-      marginTop: '20px',
-      marginBottom: '10px',
-      paddingLeft: '5px',
+    select: {
+      padding: '8px', borderRadius: '8px', border: '1px solid #ccc',
+      backgroundColor: darkMode ? '#374151' : '#fff', color: darkMode ? '#fff' : '#000'
     }
-  }
+  };
 
   return (
     <div style={styles.page}>
       <h1 style={styles.title}>Ayarlar</h1>
-      
-      <h2 style={styles.sectionTitle}>Görünüm Ayarları</h2>
-      <ToggleSwitch 
-        label="Karanlık Mod"
-        checked={darkMode}
-        onChange={toggleDarkMode}
-        darkMode={darkMode}
-      />
 
-      {/* Future settings will be added here */}
+      <div style={styles.section}>
+        <h2 style={styles.sectionTitle}>Uygulama Görünümü</h2>
+        <div style={styles.item}>
+          <span>Karanlık Mod</span>
+          <button onClick={toggleDarkMode} style={{ padding: '8px 16px', borderRadius: '20px', border: 'none', backgroundColor: darkMode ? '#10b981' : '#ccc' }}>
+            {darkMode ? 'Açık' : 'Kapalı'}
+          </button>
+        </div>
+      </div>
+
+      <div style={styles.section}>
+        <h2 style={styles.sectionTitle}>Bildirim Ayarları</h2>
+        <div style={styles.item}>
+          <span>Ezan Bildirimleri</span>
+          <button onClick={handleToggleNotif} style={{ padding: '8px 16px', borderRadius: '20px', border: 'none', backgroundColor: notifSettings.enabled ? '#10b981' : '#ccc' }}>
+            {notifSettings.enabled ? 'Aktif' : 'Pasif'}
+          </button>
+        </div>
+
+        <div style={styles.item}>
+          <span>Ezan Sesi</span>
+          <select
+            value={notifSettings.selectedAdhan}
+            onChange={(e) => handleSoundChange('selectedAdhan', e.target.value)}
+            style={styles.select}
+          >
+            {SOUND_OPTIONS.adhan.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+
+        <div style={styles.item}>
+          <span>Vakit Öncesi Hatırlatıcı</span>
+          <select
+            value={notifSettings.selectedNotification}
+            onChange={(e) => handleSoundChange('selectedNotification', e.target.value)}
+            style={styles.select}
+          >
+            {SOUND_OPTIONS.notification.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div style={styles.section}>
+        <h2 style={styles.sectionTitle}>Veri ve Konum</h2>
+        <button
+          onClick={() => { localStorage.removeItem('prayer_times_cache'); window.location.reload(); }}
+          style={{ width: '100%', padding: '15px', borderRadius: '12px', border: 'none', backgroundColor: '#ef4444', color: '#fff', fontWeight: 'bold' }}
+        >
+          Konum ve Vakitleri Sıfırla
+        </button>
+      </div>
     </div>
   );
 };

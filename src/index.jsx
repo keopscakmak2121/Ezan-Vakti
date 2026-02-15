@@ -7,10 +7,8 @@ import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
     <App />
-  </React.StrictMode>
 );
 
-// Service Worker DEVRE DIŞI - Cache sorunu önlendi
+// Service Worker DEVRE DIŞI
 serviceWorkerRegistration.unregister();

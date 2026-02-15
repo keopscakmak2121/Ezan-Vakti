@@ -7,6 +7,7 @@
     "@capacitor/app": "^7.1.0",
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
+    "@capacitor/filesystem": "^6.0.0",
     "@capacitor/geolocation": "^7.1.5",
     "@capacitor/local-notifications": "^7.0.3",
     "@testing-library/dom": "^10.4.1",
@@ -14,7 +15,6 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "lucide-react": "^0.544.0",
-    "pinia": "^3.0.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "web-vitals": "^2.1.4"
@@ -22,7 +22,6 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
     "patch-package": "^8.0.1",
-    "typescript": "^5.9.3",
     "vite": "^5.3.1"
   },
   "scripts": {
@@ -33,23 +32,5 @@
     "copy": "npx cap copy android",
     "sync": "npx cap sync android",
     "rebuild": "npm run build && npm run copy && npm run sync"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
   }
 }

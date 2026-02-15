@@ -1,9 +1,9 @@
-/* Arapça Fontlar */
 @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Lateef:wght@200;300;400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Harmattan:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -23,10 +23,6 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
-
-/* Arapça Fontlar */
-@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&display=swap');
 
 /* Arapça metin için özel stil */
 .arabic-text {
@@ -100,33 +96,29 @@ code {
     font-size: 1.1em;
   }
 }
+
 /* Tecvid Renkleri */
 .tajweed-text tajweed {
   font-style: normal;
 }
 
-/* Kırmızı - Ham Wasl, Lam Shamsiyah */
 .tajweed-text tajweed.ham_wasl,
 .tajweed-text tajweed.laam_shamsiyah {
   color: #dc2626;
 }
 
-/* Mavi - Madda Normal */
 .tajweed-text tajweed.madda_normal {
   color: #2563eb;
 }
 
-/* Yeşil - Madda Permissible */
 .tajweed-text tajweed.madda_permissible {
   color: #059669;
 }
 
-/* Mor - Madda Necessary */
 .tajweed-text tajweed.madda_necessary {
   color: #7c3aed;
 }
 
-/* Ayet numarası */
 .tajweed-text span.end {
   color: inherit;
   font-weight: normal;
