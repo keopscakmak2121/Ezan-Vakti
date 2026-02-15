@@ -1,71 +1,169 @@
-import React from 'react';
-import AyahControls from './AyahControls';
+import React, { useState } from 'react';
+import NoteModal from './NoteModal';
+import { hasNote } from '../../utils/ayahNotesStorage';
 
 const AyahCard = ({
   ayah,
   settings,
   darkMode,
-  currentAyah,
-  copiedAyah,
+  isPlaying,
   isBookmarked,
-  note,
-  onPlayClick, // "onPlay" yerine "onPlayClick" olarak güncellendi
-  onCopy,
-  onToggleBookmark,
-  onOpenNote
+  surahName,
+  onPlayClick,
+  onBookmarkToggle,
+  onNoteChange,
+  theme // Yeni: Tema renkleri
 }) => {
-  const text = darkMode ? '#f3f4f6' : '#1f2937';
-  const isActive = currentAyah === ayah.number;
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [ayahHasNote, setAyahHasNote] = useState(hasNote(ayah.surahNumber || 1, ayah.number));
+
+  // Eğer tema verilmişse onu kullan, yoksa eski mantık devam
+  const cardBg = theme ? theme.bg : (darkMode ? '#1f2937' : '#ffffff');
+  const textColor = theme ? theme.text : (darkMode ? '#f3f4f6' : '#1f2937');
+  const subTextColor = theme ? theme.sub : (darkMode ? '#cbd5e1' : '#475569');
+  const borderColor = theme ? (settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#e5e7eb') : (darkMode ? '#374151' : '#e5e7eb');
+
+  const handleNoteSave = () => {
+    setAyahHasNote(true);
+    onNoteChange && onNoteChange();
+  };
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        padding: '15px',
-        backgroundColor: darkMode ? '#1f2937' : '#ffffff',
-        borderRadius: '12px',
-        border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        transition: 'all 0.3s',
-      }}
-    >
-      {/* Arapça Metin */}
-      <div style={{
-        fontSize: settings.fontSize + 4,
-        textAlign: 'right',
-        lineHeight: '2.5',
-        color: text,
-        marginBottom: '15px',
-        direction: 'rtl',
-        fontFamily: settings.arabicFont || 'Amiri',
-      }}>
-        {ayah.arabic}
-        <span style={{ color: '#059669', fontSize: '0.8em', marginRight: '10px' }}> ({ayah.number})</span>
+    <>
+      <div
+        style={{
+          position: 'relative',
+          padding: '15px',
+          backgroundColor: cardBg,
+          borderRadius: '12px',
+          border: isPlaying 
+            ? '2px solid #059669' 
+            : `1px solid ${borderColor}`,
+          boxShadow: isPlaying 
+            ? '0 4px 12px rgba(5, 150, 105, 0.3)' 
+            : '0 1px 3px rgba(0,0,0,0.1)',
+          transition: 'all 0.3s',
+        }}
+      >
+        {/* Not İndikatörü */}
+        {ayahHasNote && (
+          <div style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            backgroundColor: '#f59e0b',
+            boxShadow: '0 0 4px rgba(245, 158, 11, 0.6)'
+          }} />
+        )}
+
+        {/* Arapça Metin */}
+        <div style={{
+          fontSize: settings.fontSize + 4,
+          textAlign: 'right',
+          lineHeight: '2.5',
+          color: textColor,
+          marginBottom: '15px',
+          direction: 'rtl',
+          fontFamily: settings.arabicFont || 'Amiri',
+        }}>
+          {ayah.arabic}
+          <span style={{ color: '#059669', fontSize: '0.8em', marginRight: '10px' }}> ({ayah.number})</span>
+        </div>
+
+        {/* Türkçe Çeviri */}
+        {settings.showTranslation && (
+            <div style={{
+                fontSize: settings.fontSize - 2,
+                lineHeight: '1.6',
+                color: subTextColor,
+                marginBottom: '15px',
+                borderTop: `1px solid ${borderColor}`,
+                paddingTop: '10px'
+              }}>
+              {ayah.turkish}
+            </div>
+        )}
+        
+        {/* Kontroller */}
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          marginTop: '12px',
+          flexWrap: 'wrap'
+        }}>
+          {/* Not */}
+          <button
+            onClick={() => setShowNoteModal(true)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: ayahHasNote
+                ? '#f59e0b'
+                : (settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#f3f4f6'),
+              color: ayahHasNote ? 'white' : textColor,
+              fontSize: '16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {ayahHasNote ? '📄' : '📝'}
+          </button>
+          
+          {/* Yer İmi */}
+          <button
+            onClick={onBookmarkToggle}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: isBookmarked 
+                ? '#059669' 
+                : (settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#f3f4f6'),
+              color: isBookmarked ? 'white' : textColor,
+              fontSize: '16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {isBookmarked ? '🔖' : '📌'}
+          </button>
+          
+          {/* Dinle */}
+          <button
+            onClick={onPlayClick}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: isPlaying ? '#059669' : (settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#f3f4f6'),
+              color: isPlaying ? 'white' : textColor,
+              fontSize: '16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {isPlaying ? '⏸️' : '▶️'}
+          </button>
+        </div>
       </div>
 
-      {/* Türkçe Çeviri */}
-      {settings.showTranslation && (
-          <div style={{
-              fontSize: settings.fontSize - 2,
-              lineHeight: '1.6',
-              color: darkMode ? '#cbd5e1' : '#475569',
-              marginBottom: '15px',
-              borderTop: `1px solid ${darkMode ? '#374151' : '#f3f4f6'}`,
-              paddingTop: '10px'
-            }}>
-            {ayah.turkish}
-          </div>
+      {showNoteModal && (
+        <NoteModal
+          surahNumber={ayah.surahNumber || 1}
+          ayahNumber={ayah.number}
+          surahName={surahName || 'Sure'}
+          darkMode={settings.readerTheme === 'dark' || settings.readerTheme === 'black'}
+          onClose={() => setShowNoteModal(false)}
+          onSave={handleNoteSave}
+        />
       )}
-      
-      <AyahControls
-        ayah={ayah}
-        darkMode={darkMode}
-        onPlay={onPlayClick} // "onPlayClick" prop'u alt bileşene aktarılıyor
-        onCopy={onCopy}
-        onToggleBookmark={onToggleBookmark}
-        onOpenNote={onOpenNote}
-      />
-    </div>
+    </>
   );
 };
 

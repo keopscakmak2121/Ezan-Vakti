@@ -67,12 +67,47 @@ const JuzView = ({ darkMode, onJuzClick }) => { // Added onJuzClick prop
 };
 
 // Main component with tabs
-const SurahList = ({ darkMode, onSurahClick, onJuzClick }) => { // Added onJuzClick prop
+const SurahList = ({ darkMode, onSurahClick, onJuzClick }) => {
   const [activeTab, setActiveTab] = useState('surah');
+
+  const handleSearchClick = () => {
+    // Navigate to search - parent component should handle this
+    if (window.handleQuranSearchClick) {
+      window.handleQuranSearchClick();
+    }
+  };
 
   return (
     <div style={styles(darkMode).pageContainer}>
-      <h2 style={styles(darkMode).header}>Kuran Oku</h2>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '20px'
+      }}>
+        <h2 style={{ ...styles(darkMode).header, margin: 0 }}>Kuran Oku</h2>
+        <button
+          onClick={() => {
+            const event = new CustomEvent('navigateToQuranSearch');
+            window.dispatchEvent(event);
+          }}
+          style={{
+            padding: '10px 16px',
+            borderRadius: '10px',
+            border: 'none',
+            backgroundColor: darkMode ? '#374151' : '#e5e7eb',
+            color: darkMode ? '#f3f4f6' : '#1f2937',
+            fontSize: '18px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: '600'
+          }}
+        >
+          🔍 Ara
+        </button>
+      </div>
       
       <div style={styles(darkMode).tabContainer}>
         <button 

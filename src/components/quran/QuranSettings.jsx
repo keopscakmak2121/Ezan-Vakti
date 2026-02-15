@@ -1,8 +1,7 @@
 import React from 'react';
-import { arabicFonts, reciters, translations } from '../../utils/settingsStorage.js'; // Import translations
+import { arabicFonts, reciters, translations, readerThemes } from '../../utils/settingsStorage.js';
 
-// A reusable row component for settings
-const SettingRow = ({ label, children, darkMode }) => (
+const SettingRow = ({ label, children, darkMode, subtitle }) => (
   <div style={{
     display: 'flex',
     justifyContent: 'space-between',
@@ -10,12 +9,14 @@ const SettingRow = ({ label, children, darkMode }) => (
     padding: '16px 0',
     borderBottom: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
   }}>
-    <span style={{ fontSize: '18px' }}>{label}</span>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <span style={{ fontSize: '18px' }}>{label}</span>
+      {subtitle && <span style={{ fontSize: '12px', color: darkMode ? '#9ca3af' : '#6b7280' }}>{subtitle}</span>}
+    </div>
     <div>{children}</div>
   </div>
 );
 
-// A reusable toggle switch component
 const ToggleSwitch = ({ checked, onChange }) => {
     return (
         <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
@@ -52,13 +53,41 @@ const QuranSettings = ({ darkMode, onBack, settings, onSettingsChange }) => {
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '10px' }}>
         
+        {/* READER THEMES - OKUMA TEMALARI */}
+        <div style={{ marginBottom: '10px' }}>
+          <span style={{ fontSize: '18px', display: 'block', marginBottom: '12px' }}>Okuma Teması</span>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {readerThemes.map(theme => (
+              <button
+                key={theme.id}
+                onClick={() => handleSettingChange('readerTheme', theme.id)}
+                style={{
+                  padding: '10px 15px',
+                  borderRadius: '10px',
+                  border: settings.readerTheme === theme.id ? '3px solid #059669' : `1px solid ${darkMode ? '#4b5563' : '#d1d5db'}`,
+                  backgroundColor: theme.bg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  minWidth: '70px',
+                  boxShadow: settings.readerTheme === theme.id ? '0 0 10px rgba(5, 150, 105, 0.4)' : 'none'
+                }}
+              >
+                {theme.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* AUTO PLAY */}
+        <SettingRow label="Otomatik Devam Et" subtitle="Ayet bitince sonrakine geçer" darkMode={darkMode}>
+          <ToggleSwitch checked={settings.autoPlay} onChange={(e) => handleSettingChange('autoPlay', e.target.checked)} />
+        </SettingRow>
+
         {/* MEAL SELECTION */}
         <SettingRow label="Meal Seçimi" darkMode={darkMode}>
-            <select 
-                value={settings.translation}
-                onChange={(e) => handleSettingChange('translation', e.target.value)}
-                style={selectStyle}
-            >
+            <select value={settings.translation} onChange={(e) => handleSettingChange('translation', e.target.value)} style={selectStyle}>
                 {translations.map(t => (<option key={t.id} value={t.id}>{t.name}</option>))}
             </select>
         </SettingRow>
@@ -74,30 +103,19 @@ const QuranSettings = ({ darkMode, onBack, settings, onSettingsChange }) => {
 
         {/* SHOW TRANSLATION */}
         <SettingRow label="Meal Göster" darkMode={darkMode}>
-          <ToggleSwitch 
-            checked={settings.showTranslation}
-            onChange={(e) => handleSettingChange('showTranslation', e.target.checked)}
-          />
+          <ToggleSwitch checked={settings.showTranslation} onChange={(e) => handleSettingChange('showTranslation', e.target.checked)} />
         </SettingRow>
 
         {/* ARABIC FONT */}
         <SettingRow label="Arapça Yazı Tipi" darkMode={darkMode}>
-            <select 
-                value={settings.arabicFont}
-                onChange={(e) => handleSettingChange('arabicFont', e.target.value)}
-                style={selectStyle}
-            >
+            <select value={settings.arabicFont} onChange={(e) => handleSettingChange('arabicFont', e.target.value)} style={selectStyle}>
                 {arabicFonts.map(font => (<option key={font.id} value={font.id}>{font.name}</option>))}
             </select>
         </SettingRow>
 
-        {/* REUITER (KARI) SELECTION */}
+        {/* REUITER SELECTION */}
         <SettingRow label="Hafız (Kari)" darkMode={darkMode}>
-            <select 
-                value={settings.reciter}
-                onChange={(e) => handleSettingChange('reciter', e.target.value)}
-                style={selectStyle}
-            >
+            <select value={settings.reciter} onChange={(e) => handleSettingChange('reciter', e.target.value)} style={selectStyle}>
                 {reciters.map(reciter => (<option key={reciter.id} value={reciter.id}>{reciter.name}</option>))}
             </select>
         </SettingRow>

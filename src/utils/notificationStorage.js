@@ -1,292 +1,113 @@
-// src/utils/notificationStorage.js - CAPACITOR NATIVE VERSION + EXACT ALARM PERMISSION
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 
 const NOTIFICATION_SETTINGS_KEY = 'quran_notification_settings';
 
-// 🎵 SES SEÇENEKLERİ
+// 🎵 ZENGİNLEŞTİRİLMİŞ SES ARŞİVİ
 export const SOUND_OPTIONS = {
   adhan: [
-    { id: 'adhan1', name: 'Ezan 1', file: 'adhan1.mp3' },
-    { id: 'adhan2', name: 'Ezan 2', file: 'adhan2.mp3' },
-    { id: 'adhan3', name: 'Ezan 3', file: 'adhan3.mp3' },
-    { id: 'adhan4', name: 'Ezan 4', file: 'adhan4.mp3' },
-    { id: 'adhan5', name: 'Ezan 5', file: 'adhan5.mp3' },
-    { id: 'adhan6', name: 'Ezan 6', file: 'adhan6.mp3' }
+    { id: 'adhan_makkah', name: 'Mekke Ezanı', file: 'adhan_makkah.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan1.mp3' },
+    { id: 'adhan_madinah', name: 'Medine Ezanı', file: 'adhan_madinah.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan2.mp3' },
+    { id: 'adhan_istanbul_saba', name: 'İstanbul (Saba)', file: 'adhan_istanbul_saba.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan20.mp3' },
+    { id: 'adhan_istanbul_rast', name: 'İstanbul (Rast)', file: 'adhan_istanbul_rast.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan19.mp3' },
+    { id: 'adhan_egypt', name: 'Mısır Ezanı', file: 'adhan_egypt.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan3.mp3' },
+    { id: 'adhan_alaqsa', name: 'Mescid-i Aksa', file: 'adhan_alaqsa.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan4.mp3' },
+    { id: 'adhan_abdussamed', name: 'Abdulbasit Abdussamed', file: 'adhan_abdussamed.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan10.mp3' },
+    { id: 'adhan_dua', name: 'Ezan Duası', file: 'adhan_dua.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan15.mp3' }
   ],
   notification: [
-    { id: 'notification1', name: 'Bildirim 1', file: 'notification1.mp3' },
-    { id: 'notification2', name: 'Bildirim 2', file: 'notification2.mp3' },
-    { id: 'notification3', name: 'Bildirim 3', file: 'notification3.mp3' },
-    { id: 'notification4', name: 'Bildirim 4', file: 'notification4.mp3' },
-    { id: 'default', name: 'Varsayılan Ses', file: 'default' }
+    { id: 'notif_short', name: 'Kısa Uyarı', file: 'notif_short.mp3', remoteUrl: 'https://www.soundjay.com/buttons/beep-07a.mp3' },
+    { id: 'notif_bell', name: 'Zil Sesi', file: 'notif_bell.mp3', remoteUrl: 'https://www.soundjay.com/buttons/beep-01a.mp3' },
+    { id: 'notif_digital', name: 'Dijital Bip', file: 'notif_digital.mp3', remoteUrl: 'https://www.soundjay.com/buttons/beep-08b.mp3' },
+    { id: 'notif_nature', name: 'Kuş Sesi', file: 'notif_nature.mp3', remoteUrl: 'https://www.soundjay.com/nature/bird-chirp-1.mp3' },
+    { id: 'notif_water', name: 'Su Damlası', file: 'notif_water.mp3', remoteUrl: 'https://www.soundjay.com/misc/water-droplet-1.mp3' },
+    { id: 'default', name: 'Sistem Varsayılanı', file: 'default' }
   ]
 };
 
-// Varsayılan bildirim ayarları
 export const getDefaultNotificationSettings = () => ({
   enabled: true,
-  prayerNotifications: {
-    Fajr: { 
-      enabled: true, 
-      minutesBefore: 10,
-      adjustment: 0
-    },
-    Sunrise: { 
-      enabled: true, 
-      minutesBefore: 5,
-      adjustment: 0
-    },
-    Dhuhr: { 
-      enabled: true, 
-      minutesBefore: 10,
-      adjustment: 0
-    },
-    Asr: { 
-      enabled: true, 
-      minutesBefore: 10,
-      adjustment: 0
-    },
-    Maghrib: { 
-      enabled: true, 
-      minutesBefore: 10,
-      adjustment: 0
-    },
-    Isha: { 
-      enabled: true, 
-      minutesBefore: 10,
-      adjustment: 0
-    }
-  },
   sound: true,
-  soundType: 'adhan',
-  selectedAdhan: 'adhan1',
-  selectedNotification: 'notification1',
-  vibration: true,
-  vibrationPattern: [0, 500, 200, 500],
-  customMessage: false,
-  messageTemplate: '{prayer} namazına {minutes} dakika kaldı'
+  vibration: true, // Genel titreşim
+  prayerNotifications: {
+    Fajr: { enabled: true, minutesBefore: 0, soundId: 'adhan_makkah', soundType: 'adhan', vibration: true },
+    Sunrise: { enabled: true, minutesBefore: 0, soundId: 'notif_short', soundType: 'notification', vibration: false },
+    Dhuhr: { enabled: true, minutesBefore: 0, soundId: 'adhan_istanbul_saba', soundType: 'adhan', vibration: true },
+    Asr: { enabled: true, minutesBefore: 0, soundId: 'adhan_istanbul_rast', soundType: 'adhan', vibration: true },
+    Maghrib: { enabled: true, minutesBefore: 0, soundId: 'adhan_egypt', soundType: 'adhan', vibration: true },
+    Isha: { enabled: true, minutesBefore: 0, soundId: 'adhan_madinah', soundType: 'adhan', vibration: true }
+  }
 });
 
-// Bildirim ayarlarını al
 export const getNotificationSettings = () => {
   try {
     const settings = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
-    if (settings) {
-      const parsed = JSON.parse(settings);
-      const defaults = getDefaultNotificationSettings();
-      
-      // Eski ayarları yeni formata dönüştür
-      if (parsed.prayerNotifications) {
-        Object.keys(parsed.prayerNotifications).forEach(prayer => {
-          if (!parsed.prayerNotifications[prayer].adjustment) {
-            parsed.prayerNotifications[prayer].adjustment = 0;
-          }
-        });
-      }
-      
-      return { ...defaults, ...parsed };
-    }
-    return getDefaultNotificationSettings();
+    if (!settings) return getDefaultNotificationSettings();
+    const parsed = JSON.parse(settings);
+    // Veri yapısı kontrolü ve eksikleri tamamlama
+    const defaults = getDefaultNotificationSettings();
+    if (!parsed.prayerNotifications || !parsed.prayerNotifications.Fajr) return defaults;
+
+    // Titreşim ayarı globalde yoksa ekle
+    if (parsed.vibration === undefined) parsed.vibration = true;
+
+    return parsed;
   } catch (error) {
-    console.error('Bildirim ayarları yüklenirken hata:', error);
     return getDefaultNotificationSettings();
   }
 };
 
-// Bildirim ayarlarını kaydet
 export const saveNotificationSettings = (settings) => {
-  try {
-    localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings));
-    console.log('💾 Ayarlar kaydedildi:', settings);
-    return true;
-  } catch (error) {
-    console.error('Bildirim ayarları kaydedilirken hata:', error);
-    return false;
-  }
+  localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings));
+  return true;
 };
 
-// Tüm bildirimleri aç/kapat
-export const toggleAllNotifications = (enabled) => {
-  const settings = getNotificationSettings();
-  settings.enabled = enabled;
-  return saveNotificationSettings(settings);
-};
-
-// Ses dosyası yolunu al
-export const getSoundPath = (soundId, soundType) => {
-  if (soundId === 'default') {
-    return 'default';
-  }
-  
-  const soundList = soundType === 'adhan' ? SOUND_OPTIONS.adhan : SOUND_OPTIONS.notification;
+export const downloadAdhanSound = async (soundId, soundType) => {
+  const soundList = SOUND_OPTIONS[soundType] || [];
   const sound = soundList.find(s => s.id === soundId);
-  
-  if (sound) {
-    return `sounds/${sound.file}`;
-  }
-  
-  return 'default';
-};
+  if (!sound || !sound.remoteUrl) return false;
 
-// Bildirim mesajı oluştur
-export const createNotificationMessage = (prayerName, adjustment = 0) => {
-  const settings = getNotificationSettings();
-  const prayerNames = {
-    Fajr: 'İmsak',
-    Sunrise: 'Güneş',
-    Dhuhr: 'Öğle',
-    Asr: 'İkindi',
-    Maghrib: 'Akşam',
-    Isha: 'Yatsı'
-  };
-
-  const turkishName = prayerNames[prayerName] || prayerName;
-
-  if (settings.customMessage && settings.messageTemplate) {
-    return settings.messageTemplate
-      .replace('{prayer}', turkishName)
-      .replace('{minutes}', Math.abs(adjustment));
-  }
-
-  // Tam vakitte
-  if (adjustment === 0) {
-    return `${turkishName} namazı vakti girdi! 🕌`;
-  }
-
-  // Vakitten önce
-  if (adjustment < 0) {
-    return `${turkishName} namazına ${Math.abs(adjustment)} dakika kaldı`;
-  }
-
-  // Vakitten sonra
-  return `${turkishName} namazı vakti gireli ${adjustment} dakika oldu`;
-};
-
-// ============================================
-// CAPACITOR NATIVE BİLDİRİM İZİNLERİ + EXACT ALARM
-// ============================================
-
-// 🔔 Bildirim izni durumunu kontrol et
-export const checkNotificationPermission = async () => {
   try {
-    const result = await LocalNotifications.checkPermissions();
-    console.log('📱 Native izin durumu:', result.display);
-    return result.display;
-  } catch (error) {
-    console.error('İzin kontrolü hatası:', error);
-    return 'denied';
-  }
-};
+    const response = await fetch(sound.remoteUrl);
+    const blob = await response.blob();
+    const base64Data = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(blob);
+    });
 
-// ⏰ EXACT ALARM izni kontrol et (Android 12+)
-export const checkExactAlarmPermission = async () => {
-  try {
-    // Android platformunda mıyız?
-    if (!window.Capacitor || window.Capacitor.getPlatform() !== 'android') {
-      console.log('📱 Android değil, exact alarm kontrolü atlanıyor');
-      return true;
+    await Filesystem.writeFile({
+      path: `sounds/${sound.file}`,
+      data: base64Data,
+      directory: Directory.Data,
+      recursive: true
+    });
+
+    const downloaded = JSON.parse(localStorage.getItem('downloaded_sounds') || '[]');
+    if (!downloaded.includes(soundId)) {
+      downloaded.push(soundId);
+      localStorage.setItem('downloaded_sounds', JSON.stringify(downloaded));
     }
-
-    // Android sürümünü kontrol et (API 31+ = Android 12+)
-    const isAndroid12Plus = window.Capacitor.Plugins?.Device?.getInfo
-      ? (await window.Capacitor.Plugins.Device.getInfo()).androidSDKVersion >= 31
-      : true; // Varsayılan olarak true
-
-    if (!isAndroid12Plus) {
-      console.log('📱 Android 12 altı, exact alarm otomatik açık');
-      return true;
-    }
-
-    // Android 12+ için exact alarm iznini kontrol et
-    console.log('⏰ Exact alarm izni kontrol ediliyor...');
-    
-    // Capacitor'da direkt exact alarm API'si yok, 
-    // bu yüzden bildirimleri zamanlarken hata alırsak izin yok demektir
-    return true; // İzin varsayımı, hata durumunda catch'te yakalanır
-    
-  } catch (error) {
-    console.error('⏰ Exact alarm izin kontrolü hatası:', error);
+    return true;
+  } catch (e) {
+    console.error('İndirme hatası:', e);
     return false;
   }
 };
 
-// 🔔 Bildirim izni iste + EXACT ALARM
-export const requestNotificationPermission = async () => {
-  try {
-    console.log('🔔 Bildirim izni isteniyor...');
-    
-    // 1. Normal bildirim izni
-    const result = await LocalNotifications.requestPermissions();
-    console.log('📱 İzin sonucu:', result.display);
-    
-    if (result.display !== 'granted') {
-      console.log('❌ Bildirim izni reddedildi');
-      return result.display;
-    }
-
-    // 2. Android 12+ için EXACT ALARM iznini kontrol et
-    if (window.Capacitor && window.Capacitor.getPlatform() === 'android') {
-      console.log('⏰ Android için exact alarm kontrolü yapılıyor...');
-      
-      try {
-        // Exact alarm iznini örtük olarak kontrol ediyoruz
-        // Eğer izin yoksa, kullanıcıya manuel olarak ayarlara gitmesini söyleyeceğiz
-        const hasExactAlarm = await checkExactAlarmPermission();
-        
-        if (!hasExactAlarm) {
-          console.log('⚠️ Exact alarm izni yok');
-          alert(
-            '⚠️ TAM ZAMANINDA BİLDİRİM İZNİ GEREKLİ\n\n' +
-            'Namaz vakitlerinin tam zamanında bildirim alabilmek için:\n\n' +
-            '1. Telefon Ayarları → Uygulamalar\n' +
-            '2. Kuran-ı Kerim uygulamasını bulun\n' +
-            '3. İzinler → Alarmlar ve hatırlatıcılar → İZİN VER\n\n' +
-            'Bu izin olmadan bildirimler gecikebilir.'
-          );
-        }
-      } catch (exactAlarmError) {
-        console.log('⚠️ Exact alarm kontrolü yapılamadı:', exactAlarmError);
-      }
-    }
-
-    return result.display;
-    
-  } catch (error) {
-    console.error('İzin isteme hatası:', error);
-    return 'denied';
-  }
+export const isSoundDownloaded = (soundId) => {
+  if (soundId === 'default') return true;
+  const downloaded = JSON.parse(localStorage.getItem('downloaded_sounds') || '[]');
+  return downloaded.includes(soundId);
 };
 
-// 🔋 Batarya optimizasyonu uyarısı göster
-export const checkBatteryOptimization = () => {
-  if (window.Capacitor && window.Capacitor.getPlatform() === 'android') {
-    console.log('🔋 Batarya optimizasyonu uyarısı');
-    
-    // Kullanıcıya bilgi ver
-    const shouldShowWarning = !localStorage.getItem('battery_warning_shown');
-    
-    if (shouldShowWarning) {
-      setTimeout(() => {
-        // eslint-disable-next-line no-restricted-globals
-        if (window.confirm(
-          '🔋 BATARYA OPTİMİZASYONU UYARISI\n\n' +
-          'Bildirimlerin düzenli çalışması için:\n\n' +
-          '1. Telefon Ayarları → Batarya\n' +
-          '2. Batarya Optimizasyonu\n' +
-          '3. Kuran-ı Kerim → "Optimize etme"\n\n' +
-          'Şimdi ayarlara gitmek ister misiniz?'
-        )) {
-          // Ayarlar açılabilir (opsiyonel)
-          console.log('Kullanıcı ayarlara gidecek');
-        }
-        
-        localStorage.setItem('battery_warning_shown', 'true');
-      }, 3000);
-    }
-  }
+export const createNotificationMessage = (prayerName, adjustment = 0) => {
+  const prayerNames = { Fajr: 'İmsak', Sunrise: 'Güneş', Dhuhr: 'Öğle', Asr: 'İkindi', Maghrib: 'Akşam', Isha: 'Yatsı' };
+  const name = prayerNames[prayerName] || prayerName;
+  if (adjustment === 0) return `${name} namazı vakti girdi! 🕌`;
+  return `${name} namazına ${Math.abs(adjustment)} dakika kaldı.`;
 };
 
-// Ayarları sıfırla
 export const resetNotificationSettings = () => {
   localStorage.removeItem(NOTIFICATION_SETTINGS_KEY);
   return getDefaultNotificationSettings();

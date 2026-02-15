@@ -6,12 +6,17 @@ import TabBar from './components/TabBar.jsx';
 import HomePage from './components/home/HomePage.jsx';
 import SurahList from './components/SurahList.jsx';
 import QuranReader from './components/quran/QuranReader.jsx';
+import QuranSearch from './components/quran/QuranSearch.jsx';
 import JuzReader from './components/quran/JuzReader.jsx';
 import Settings from './components/Settings.jsx';
 import Navigation, { menuItems } from './components/Navigation.jsx';
 import EsmaUlHusna from './components/EsmaUlHusna.jsx';
 import PrayerTimes from './components/PrayerTimes.jsx';
 import QiblaFinder from './components/QiblaFinder.jsx';
+import BookmarksPage from './components/BookmarksPage.jsx';
+import NotesPage from './components/NotesPage.jsx';
+import StatisticsPage from './components/StatisticsPage.jsx';
+import Downloads from './components/Downloads.jsx';
 import { initNotificationService } from './utils/notificationService.js';
 import { getPrayerTimesByCoordinates, getUserLocation, getCityFromCoordinates } from './utils/prayerTimesApi.js';
 import { getStoredPrayerTimes, storePrayerTimes } from './utils/storage.js';
@@ -20,17 +25,25 @@ const App = () => {
   const [viewHistory, setViewHistory] = useState(['home']);
   const [selectedSurah, setSelectedSurah] = useState(null);
   const [selectedJuz, setSelectedJuz] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [toast, setToast] = useState({ show: false, message: '' });
 
   const currentView = viewHistory[viewHistory.length - 1];
   const backButtonExit = useRef(false);
-  const initialized = useRef(false); // Çift tetiklenmeyi önlemek için ref
+  const initialized = useRef(false);
 
   const stateRef = useRef({ viewHistory, selectedSurah, selectedJuz });
   useEffect(() => {
     stateRef.current = { viewHistory, selectedSurah, selectedJuz };
   }, [viewHistory, selectedSurah, selectedJuz]);
+
+  // Dark mode kaydet
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
 
   useEffect(() => {
     const setupBackButton = async () => {
@@ -50,8 +63,18 @@ const App = () => {
       });
       return listener;
     };
+    
+    // Arama event listener
+    const handleSearchNavigation = () => {
+      handleNavigate('quranSearch');
+    };
+    window.addEventListener('navigateToQuranSearch', handleSearchNavigation);
+    
     const l = setupBackButton();
-    return () => { l.then(res => res.remove()); };
+    return () => { 
+      l.then(res => res.remove()); 
+      window.removeEventListener('navigateToQuranSearch', handleSearchNavigation);
+    };
   }, []);
 
   useEffect(() => {
@@ -101,11 +124,22 @@ const App = () => {
 
   const renderCurrentView = () => {
     if (selectedJuz) return <JuzReader juzNumber={selectedJuz} darkMode={darkMode} onBack={() => setSelectedJuz(null)} />;
-    if (selectedSurah) return <QuranReader surahNumber={selectedSurah} darkMode={darkMode} onBack={() => setSelectedSurah(null)} />;
+    if (selectedSurah) return <QuranReader surahNumber={selectedSurah?.number || selectedSurah} darkMode={darkMode} onBack={() => setSelectedSurah(null)} />;
 
     switch (currentView) {
       case 'home': return <HomePage darkMode={darkMode} onNavigate={handleNavigate} />;
       case 'quran': return <SurahList onSurahClick={setSelectedSurah} onJuzClick={setSelectedJuz} darkMode={darkMode} />;
+      case 'search': 
+      case 'quranSearch': 
+        return <QuranSearch darkMode={darkMode} onNavigateToAyah={(s, a) => setSelectedSurah(s)} onBack={() => handleNavigate('quran')} />;
+      case 'bookmarks': 
+        return <BookmarksPage darkMode={darkMode} onNavigateToAyah={(s) => setSelectedSurah(s)} />;
+      case 'notes': 
+        return <NotesPage darkMode={darkMode} onNavigateToAyah={(s) => setSelectedSurah(s)} />;
+      case 'downloads':
+        return <Downloads darkMode={darkMode} onSurahClick={setSelectedSurah} />;
+      case 'stats': 
+        return <StatisticsPage darkMode={darkMode} />;
       case 'prayerTimes': return <PrayerTimes darkMode={darkMode} />;
       case 'qibla': return <QiblaFinder darkMode={darkMode} />;
       case 'settings': return <Settings darkMode={darkMode} toggleDarkMode={() => setDarkMode(!darkMode)} />;

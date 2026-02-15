@@ -86,16 +86,10 @@ const PrayerTimes = ({ darkMode }) => {
   ];
 
   return (
-    <div style={{ padding: '20px', color: text }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '22px', margin: 0 }}>Vakitler ({cityName})</h2>
-        <button
-          onClick={loadPrayerTimes}
-          disabled={loading}
-          style={{ padding: '8px 15px', backgroundColor: '#059669', color: 'white', border: 'none', borderRadius: '20px', fontSize: '12px' }}
-        >
-          {loading ? '...' : '🔄 Güncelle'}
-        </button>
+    <div style={{ padding: '20px', paddingBottom: '80px', color: text }}>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ fontSize: '22px', margin: '0 0 5px 0' }}>Namaz Vakitleri</h2>
+        <p style={{ fontSize: '14px', margin: 0, opacity: 0.7 }}>📍 {cityName}</p>
       </div>
 
       {nextPrayer && (
@@ -108,7 +102,7 @@ const PrayerTimes = ({ darkMode }) => {
 
       {error && <div style={{ color: '#ef4444', marginBottom: '15px', fontSize: '14px', textAlign: 'center' }}>{error}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px' }}>
         {prayerNames.map(p => (
           <div key={p.key} style={{
             padding: '15px',
@@ -129,18 +123,39 @@ const PrayerTimes = ({ darkMode }) => {
         ))}
       </div>
 
-      <div style={{ marginTop: '30px', padding: '15px', backgroundColor: cardBg, borderRadius: '12px' }}>
+      <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: cardBg, borderRadius: '12px' }}>
         <div style={{ fontSize: '14px', marginBottom: '10px', fontWeight: 'bold' }}>Konum Ayarı</div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
           <button onClick={() => setUseGPS(true)} style={{ flex: 1, padding: '10px', backgroundColor: useGPS ? '#059669' : '#ccc', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px' }}>📍 GPS Kullan</button>
           <button onClick={() => setUseGPS(false)} style={{ flex: 1, padding: '10px', backgroundColor: !useGPS ? '#059669' : '#ccc', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px' }}>🏙️ Şehir Seç</button>
         </div>
         {!useGPS && (
-          <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '10px', borderRadius: '8px', border: '1px solid #ddd' }}>
+          <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '10px' }}>
             <option value="">Şehir Seçin...</option>
             {turkishCities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
         )}
+        <button
+          onClick={loadPrayerTimes}
+          disabled={loading}
+          style={{ 
+            width: '100%',
+            padding: '14px', 
+            backgroundColor: loading ? '#6b7280' : '#059669', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '10px', 
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          {loading ? '⏳ Güncelleniyor...' : '🔄 Vakitleri Güncelle'}
+        </button>
       </div>
     </div>
   );

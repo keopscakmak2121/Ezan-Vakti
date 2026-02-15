@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { getSettings, saveSettings } from '../../utils/settingsStorage.js';
+import { getSettings, saveSettings, getReaderTheme } from '../../utils/settingsStorage.js';
+import { saveReadingProgress, getLastReadPosition, isBookmarked, addBookmark, removeBookmark } from '../../utils/readingProgressStorage.js';
+import { getAudio, downloadAudio, downloadSurah } from '../../utils/audioStorage.js';
 import AyahCard from './AyahCard';
 import QuranSettings from './QuranSettings'; 
 import SurahHeader from './SurahHeader'; 
@@ -15,12 +16,22 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
   const [downloadMenu, setDownloadMenu] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [lastReadAyah, setLastReadAyah] = useState(null);
+  const [showContinuePrompt, setShowContinuePrompt] = useState(false);
 
   const audioRef = useRef(null);
-  const text = darkMode ? '#f3f4f6' : '#1f2937';
+  const containerRef = useRef(null);
+
+  // Yeni: Seçili temayı al
+  const theme = getReaderTheme(settings.readerTheme);
 
   useEffect(() => {
     fetchSurah(settings.translation);
+    const lastRead = getLastReadPosition();
+    if (lastRead && lastRead.surahNumber === surahNumber) {
+      setLastReadAyah(lastRead.ayahNumber);
+      setShowContinuePrompt(true);
+    }
     return () => { if (audioRef.current) audioRef.current.pause(); };
   }, [surahNumber]);
 
@@ -35,7 +46,13 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
       const surahInfoData = await surahInfoRes.json();
       const contentData = await contentRes.json();
       if (contentData.code === 200) {
-        setSurahData(surahInfoData.data);
+        const data = surahInfoData.data;
+        setSurahData({
+          ...data,
+          turkishName: data.englishName,
+          ayahsCount: data.numberOfAyahs
+        });
+
         const combined = contentData.data[0].ayahs.map((ayah, index) => ({
           number: ayah.numberInSurah,
           arabic: ayah.text,
@@ -47,99 +64,101 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
-  const getAudioUrl = (ayahInSurah) => {
-    const sPadded = String(surahNumber).padStart(3, '0');
-    const aPadded = String(ayahInSurah).padStart(3, '0');
-    return `https://everyayah.com/data/${settings.reciter || 'Alafasy_128kbps'}/${sPadded}${aPadded}.mp3`;
+  const scrollToAyah = (ayahNumber) => {
+    const el = document.querySelector(`[data-ayah-number="${ayahNumber}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
-  const getSurahAudioUrl = () => {
-    const sPadded = String(surahNumber).padStart(3, '0');
-    // Sure indirme sunucuları ve doğru klasör yapıları
-    const reciterMap = {
-      'Alafasy_128kbps': 'https://server7.mp3quran.net/alafasi',
-      'Abdul_Basit_Murattal_192kbps': 'https://server7.mp3quran.net/basit',
-      'Abdurrahmaan_As-Sudais_192kbps': 'https://server11.mp3quran.net/sds',
-      'Maher_AlMuaiqly_128kbps': 'https://server12.mp3quran.net/maher',
-      'Ghamadi_40kbps': 'https://server7.mp3quran.net/s_ghamidi'
-    };
-    const baseUrl = reciterMap[settings.reciter] || 'https://server7.mp3quran.net/alafasi';
-    return `${baseUrl}/${sPadded}.mp3`;
-  };
-
-  const playAyah = (ayahInSurah, globalNumber) => {
+  const playAyah = async (ayahInSurah, globalNumber) => {
     if (playingAyah === globalNumber && audioRef.current) {
       audioRef.current.pause();
       setPlayingAyah(null);
       return;
     }
+
     if (audioRef.current) audioRef.current.pause();
-    const newAudio = new Audio(getAudioUrl(ayahInSurah));
-    audioRef.current = newAudio;
-    newAudio.play().then(() => setPlayingAyah(globalNumber)).catch(() => alert("Ses oynatılamadı."));
-    newAudio.onended = () => setPlayingAyah(null);
+
+    try {
+      let audioUrl = await getAudio(surahNumber, ayahInSurah);
+
+      if (!audioUrl) {
+        const sPadded = String(surahNumber).padStart(3, '0');
+        const aPadded = String(ayahInSurah).padStart(3, '0');
+        audioUrl = `https://everyayah.com/data/${settings.reciter || 'Alafasy_128kbps'}/${sPadded}${aPadded}.mp3`;
+      }
+
+      const newAudio = new Audio(audioUrl);
+      audioRef.current = newAudio;
+
+      newAudio.play().then(() => {
+        setPlayingAyah(globalNumber);
+        scrollToAyah(ayahInSurah);
+      }).catch(() => alert("Ses oynatılamadı."));
+
+      newAudio.onended = () => {
+        setPlayingAyah(null);
+        if (audioUrl.startsWith('blob:')) URL.revokeObjectURL(audioUrl);
+
+        if (settings.autoPlay) {
+          const nextAyah = allVerses.find(v => v.number === ayahInSurah + 1);
+          if (nextAyah) {
+            playAyah(nextAyah.number, nextAyah.globalNumber);
+          }
+        }
+      };
+    } catch (e) {
+      console.error("Çalma hatası:", e);
+    }
   };
 
-  const downloadAndSave = async (url, fileName) => {
+  const handleAyahPlayClick = async (ayah) => {
+    if (playingAyah === ayah.globalNumber) {
+      playAyah(ayah.number, ayah.globalNumber);
+      return;
+    }
+
+    const downloadedUrl = await getAudio(surahNumber, ayah.number);
+    if (downloadedUrl) {
+      playAyah(ayah.number, ayah.globalNumber);
+    } else {
+      setDownloadMenu(ayah);
+    }
+  };
+
+  const handleDownloadAyah = async (ayah) => {
     setIsDownloading(true);
-    setDownloadProgress(0);
+    setDownloadMenu(null);
     try {
-      // BUILD HATASINI ÖNLEYEN DİNAMİK YAPI
-      let Filesystem, Directory;
-      try {
-        const fsModule = '@capacitor/filesystem';
-        const mod = await import(/* @vite-ignore */ fsModule);
-        Filesystem = mod.Filesystem;
-        Directory = mod.Directory;
-      } catch (e) {
-        console.warn("Filesystem paketi yüklü değil, tarayıcıya yönlendiriliyor.");
-        window.open(url, '_system');
-        return;
-      }
-
-      if (!Capacitor.isNativePlatform()) {
-        window.open(url, '_blank');
-        return;
-      }
-
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Dosya bulunamadı (404)");
-
-      const reader = response.body.getReader();
-      const contentLength = +response.headers.get('Content-Length');
-      let receivedLength = 0;
-      let chunks = [];
-
-      while(true) {
-        const {done, value} = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        receivedLength += value.length;
-        setDownloadProgress(Math.round((receivedLength / contentLength) * 100));
-      }
-
-      const blob = new Blob(chunks);
-      const base64Data = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-        reader.readAsDataURL(blob);
+      await downloadAudio(surahNumber, ayah.number, (progress) => {
+        setDownloadProgress(progress);
       });
-
-      // Klasör: EzanVakti/Kuran
-      await Filesystem.mkdir({ path: 'EzanVakti/Kuran', directory: Directory.ExternalStorage, recursive: true }).catch(() => {});
-      await Filesystem.writeFile({
-        path: `EzanVakti/Kuran/${fileName}`,
-        data: base64Data,
-        directory: Directory.ExternalStorage
-      });
-
-      alert(`Dosya indirildi: EzanVakti/Kuran/${fileName}`);
+      playAyah(ayah.number, ayah.globalNumber);
     } catch (e) {
-      console.error(e);
-      window.open(url, '_system');
+      alert("İndirme hatası oluştu.");
     } finally {
       setIsDownloading(false);
-      setDownloadMenu(null);
+      setDownloadProgress(0);
+    }
+  };
+
+  const handleDownloadSurah = async () => {
+    if (!surahData) return;
+    if (!window.confirm(`${surahData.turkishName} suresindeki tüm ayetler indirilecek. Devam edilsin mi?`)) return;
+
+    setIsDownloading(true);
+    setDownloadMenu(null);
+    try {
+      await downloadSurah(surahNumber, surahData.numberOfAyahs, (progress) => {
+        setDownloadProgress(progress);
+      });
+      alert(`✅ ${surahData.turkishName} suresi başarıyla indirildi.`);
+    } catch (e) {
+      alert("Sure indirilirken bir hata oluştu.");
+    } finally {
+      setIsDownloading(false);
+      setDownloadProgress(0);
     }
   };
 
@@ -147,37 +166,78 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
     return <QuranSettings darkMode={darkMode} settings={settings} onSettingsChange={(s) => { setSettings(s); saveSettings(s); if(s.translation !== settings.translation) fetchSurah(s.translation); }} onBack={() => setShowSettings(false)} />;
   }
 
-  return (
-    <div style={{ backgroundColor: darkMode ? '#111827' : '#f9fafb', minHeight: '100vh' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '35px 15px 15px 15px', backgroundColor: darkMode ? '#1f2937' : '#ffffff', borderBottom: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}` }}>
-        <button onClick={onBack} style={{ padding: '15px', background: 'none', border: 'none', fontSize: '26px', color: text }}>←</button>
-        <span style={{ fontWeight: 'bold', fontSize: '18px', color: text }}>{surahData?.turkishName || "Kur'an"}</span>
-        <button onClick={() => setShowSettings(true)} style={{ padding: '15px', background: 'none', border: 'none', fontSize: '26px', color: text }}>⚙️</button>
-      </div>
+  const continueFromLastRead = () => {
+    if (!lastReadAyah) return;
+    setTimeout(() => {
+      scrollToAyah(lastReadAyah);
+      setShowContinuePrompt(false);
+    }, 300);
+  };
 
-      {loading ? ( <div style={{ padding: '50px', textAlign: 'center', color: text }}>Sure Yükleniyor...</div> ) : (
+  return (
+    <div style={{ backgroundColor: theme.bg, minHeight: '100vh', transition: 'background-color 0.3s' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '35px 15px 15px 15px', backgroundColor: theme.bg, borderBottom: `1px solid ${settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#e5e7eb'}`, transition: 'background-color 0.3s' }}>
+        <button onClick={onBack} style={{ padding: '15px', background: 'none', border: 'none', fontSize: '26px', color: theme.text }}>←</button>
+        <span style={{ fontWeight: 'bold', fontSize: '18px', color: theme.text }}>{surahData?.turkishName || "Kur'an"}</span>
+        <div style={{ display: 'flex', gap: '5px' }}>
+          <button onClick={() => setShowSettings(true)} style={{ padding: '15px', background: 'none', border: 'none', fontSize: '26px', color: theme.text }}>⚙️</button>
+        </div>
+      </div>
+      
+      {isDownloading && (
+        <div style={{ position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, backgroundColor: 'rgba(5, 150, 105, 0.95)', color: 'white', padding: '12px 20px', borderRadius: '25px', fontSize: '14px', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
+          ⏳ İndiriliyor: %{downloadProgress}
+        </div>
+      )}
+
+      {showContinuePrompt && lastReadAyah && (
+        <div style={{ position: 'sticky', top: '70px', zIndex: 90, margin: '10px 15px', padding: '12px 18px', background: darkMode ? 'linear-gradient(90deg, #059669, #047857)' : 'linear-gradient(90deg, #10b981, #059669)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)' }}>
+          <span style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>📖 {lastReadAyah}. ayetten devam et</span>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={continueFromLastRead} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: 'rgba(255,255,255,0.95)', color: '#059669', fontWeight: 'bold', fontSize: '13px' }}>✓ Devam Et</button>
+            <button onClick={() => setShowContinuePrompt(false)} style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', fontSize: '16px' }}>✕</button>
+          </div>
+        </div>
+      )}
+
+      {loading ? ( <div style={{ padding: '50px', textAlign: 'center', color: theme.text }}>Sure Yükleniyor...</div> ) : (
         <>
-          <SurahHeader surah={surahData} darkMode={darkMode} />
-          <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px' }}>
+          <SurahHeader surah={surahData} darkMode={settings.readerTheme === 'dark' || settings.readerTheme === 'black'} />
+          <div ref={containerRef} style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px' }}>
             {allVerses.map((ayah) => (
-              <AyahCard key={ayah.globalNumber} ayah={ayah} settings={settings} darkMode={darkMode} isPlaying={playingAyah === ayah.globalNumber} onPlayClick={() => setDownloadMenu(ayah)} />
+              <div key={ayah.globalNumber} data-ayah-number={ayah.number}>
+                <AyahCard 
+                  ayah={{ ...ayah, surahNumber }}
+                  settings={settings} 
+                  darkMode={settings.readerTheme === 'dark' || settings.readerTheme === 'black'}
+                  surahName={surahData?.turkishName}
+                  isPlaying={playingAyah === ayah.globalNumber} 
+                  onPlayClick={() => handleAyahPlayClick(ayah)}
+                  isBookmarked={isBookmarked(surahNumber, ayah.number)}
+                  onBookmarkToggle={() => {
+                    if (isBookmarked(surahNumber, ayah.number)) removeBookmark(surahNumber, ayah.number);
+                    else addBookmark(surahNumber, ayah.number, surahData?.turkishName || '');
+                    setAllVerses([...allVerses]);
+                  }}
+                  onNoteChange={() => setAllVerses([...allVerses])}
+                  // Özel tema renklerini AyahCard'a aktarabiliriz
+                  theme={theme}
+                />
+              </div>
             ))}
           </div>
         </>
       )}
 
       {downloadMenu && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }} onClick={() => !isDownloading && setDownloadMenu(null)}>
-          <div style={{ backgroundColor: darkMode ? '#1f2937' : 'white', borderRadius: '20px', width: '100%', maxWidth: '320px', padding: '25px', display: 'flex', flexDirection: 'column', gap: '12px' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 5px 0', color: text, textAlign: 'center' }}>{surahData?.turkishName}</h3>
-            <button onClick={() => { playAyah(downloadMenu.number, downloadMenu.globalNumber); setDownloadMenu(null); }} style={{ padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#059669', color: 'white', fontWeight: 'bold', fontSize: '16px' }}>🔊 Dinle (Ayet {downloadMenu.number})</button>
-            <button onClick={() => downloadAndSave(getAudioUrl(downloadMenu.number), `${surahData.turkishName}_Ayet_${downloadMenu.number}.mp3`)} disabled={isDownloading} style={{ padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: darkMode ? '#374151' : '#f3f4f6', color: text }}>
-              {isDownloading ? `📥 %${downloadProgress}` : '📥 Ayeti İndir'}
-            </button>
-            <button onClick={() => downloadAndSave(getSurahAudioUrl(), `${surahData.turkishName}_Tam.mp3`)} disabled={isDownloading} style={{ padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: darkMode ? '#374151' : '#f3f4f6', color: text }}>
-              {isDownloading ? `📥 %${downloadProgress}` : '📂 Sureyi İndir'}
-            </button>
-            <button onClick={() => setDownloadMenu(null)} disabled={isDownloading} style={{ padding: '10px', marginTop: '5px', background: 'none', border: 'none', color: '#ef4444', fontWeight: 'bold' }}>Vazgeç</button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }} onClick={() => setDownloadMenu(null)}>
+          <div style={{ backgroundColor: settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#1f2937' : 'white', borderRadius: '20px', width: '100%', maxWidth: '320px', padding: '25px', display: 'flex', flexDirection: 'column', gap: '12px' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 5px 0', color: settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#f3f4f6' : '#1f2937', textAlign: 'center' }}>{surahData?.turkishName} - Ayet {downloadMenu.number}</h3>
+            <p style={{ color: settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#f3f4f6' : '#1f2937', fontSize: '14px', textAlign: 'center', opacity: 0.8, marginBottom: '10px' }}>Bu ayet henüz indirilmemiş.</p>
+            <button onClick={() => { playAyah(downloadMenu.number, downloadMenu.globalNumber); setDownloadMenu(null); }} style={{ padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#059669', color: 'white', fontWeight: 'bold', fontSize: '16px' }}>🌐 Online Dinle</button>
+            <button onClick={() => handleDownloadAyah(downloadMenu)} style={{ padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#f3f4f6', color: settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#f3f4f6' : '#1f2937', fontWeight: '600' }}>📥 Ayeti İndir ve Çal</button>
+            <button onClick={handleDownloadSurah} style={{ padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#f3f4f6', color: settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#f3f4f6' : '#1f2937', fontWeight: '600' }}>📂 Tüm Sureyi İndir</button>
+            <button onClick={() => setDownloadMenu(null)} style={{ padding: '10px', marginTop: '5px', background: 'none', border: 'none', color: '#ef4444', fontWeight: 'bold' }}>✕ Vazgeç</button>
           </div>
         </div>
       )}
