@@ -81,12 +81,13 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
     if (audioRef.current) audioRef.current.pause();
 
     try {
-      let audioUrl = await getAudio(surahNumber, ayahInSurah);
+      const reciter = settings.reciter || 'Alafasy_128kbps';
+      let audioUrl = await getAudio(surahNumber, ayahInSurah, reciter);
 
       if (!audioUrl) {
         const sPadded = String(surahNumber).padStart(3, '0');
         const aPadded = String(ayahInSurah).padStart(3, '0');
-        audioUrl = `https://everyayah.com/data/${settings.reciter || 'Alafasy_128kbps'}/${sPadded}${aPadded}.mp3`;
+        audioUrl = `https://everyayah.com/data/${reciter}/${sPadded}${aPadded}.mp3`;
       }
 
       const newAudio = new Audio(audioUrl);
@@ -119,8 +120,10 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
       return;
     }
 
-    const downloadedUrl = await getAudio(surahNumber, ayah.number);
+    const reciter = settings.reciter || 'Alafasy_128kbps';
+    const downloadedUrl = await getAudio(surahNumber, ayah.number, reciter);
     if (downloadedUrl) {
+      if (downloadedUrl.startsWith('blob:')) URL.revokeObjectURL(downloadedUrl);
       playAyah(ayah.number, ayah.globalNumber);
     } else {
       setDownloadMenu(ayah);
@@ -131,9 +134,10 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
     setIsDownloading(true);
     setDownloadMenu(null);
     try {
+      const reciter = settings.reciter || 'Alafasy_128kbps';
       await downloadAudio(surahNumber, ayah.number, (progress) => {
         setDownloadProgress(progress);
-      });
+      }, reciter);
       playAyah(ayah.number, ayah.globalNumber);
     } catch (e) {
       alert("İndirme hatası oluştu.");
@@ -150,9 +154,10 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
     setIsDownloading(true);
     setDownloadMenu(null);
     try {
+      const reciter = settings.reciter || 'Alafasy_128kbps';
       await downloadSurah(surahNumber, surahData.numberOfAyahs, (progress) => {
         setDownloadProgress(progress);
-      });
+      }, reciter);
       alert(`✅ ${surahData.turkishName} suresi başarıyla indirildi.`);
     } catch (e) {
       alert("Sure indirilirken bir hata oluştu.");

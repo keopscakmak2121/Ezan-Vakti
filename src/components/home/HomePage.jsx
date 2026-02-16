@@ -1,11 +1,13 @@
-// src/components/home/HomePage.jsx - Gereksiz yükleme ekranı ve GPS tetiklenmesi engellendi
+// src/components/home/HomePage.jsx
 
 import React, { useState, useEffect, useRef } from 'react';
 import NextPrayerCard from './NextPrayerCard.jsx';
 import PrayerTimeCards from './PrayerTimeCards.jsx';
 import TabPanel from './TabPanel.jsx';
+import PrayerAlertOverlay from './PrayerAlertOverlay.jsx';
 import { getPrayerTimesByCoordinates, getUserLocation, getNextPrayer, getCityFromCoordinates } from '../../utils/prayerTimesApi.js';
 import { getStoredPrayerTimes, storePrayerTimes } from '../../utils/storage.js';
+import { getHomeThemeColors } from '../../utils/settingsStorage.js';
 
 const calculateCountdown = (prayerTime, isTomorrow) => {
   if (!prayerTime) return null;
@@ -29,14 +31,14 @@ const HomePage = ({ darkMode, onNavigate }) => {
   const [nextPrayer, setNextPrayer] = useState(null);
   const [countdown, setCountdown] = useState('00:00:00');
   const [locationName, setLocationName] = useState('Konum...');
-  const [loading, setLoading] = useState(false); // Başlangıçta false
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [alertData, setAlertData] = useState(null); // Tam ekran bildirim
   const isMounted = useRef(true);
+  const lastAlertedPrayer = useRef(null); // Aynı vakti tekrar tetikleme
 
   useEffect(() => {
     isMounted.current = true;
-
-    // 1. Önce hafızadaki vakitleri kontrol et (HIZLI YÜKLEME)
     const storedData = getStoredPrayerTimes();
     if (storedData) {
       setPrayerTimes(storedData.timings);
@@ -44,10 +46,8 @@ const HomePage = ({ darkMode, onNavigate }) => {
       setLocationName(storedData.locationName);
       setLoading(false);
     } else {
-      // Eğer hafızada veri yoksa, o zaman yükleme ekranını göster ve çekmeyi dene
       loadPrayerTimesRemote();
     }
-
     return () => { isMounted.current = false; };
   }, []);
 
@@ -56,7 +56,17 @@ const HomePage = ({ darkMode, onNavigate }) => {
       if (nextPrayer) {
         const newCountdown = calculateCountdown(nextPrayer.time, nextPrayer.tomorrow);
         setCountdown(newCountdown);
-        if (newCountdown === '00:00:00') {
+
+        // Vakit geçtiğinde tam ekran bildirim göster
+        if (newCountdown === '00:00:00' && prayerTimes) {
+          const alertKey = `${nextPrayer.name}-${nextPrayer.time}`;
+          if (lastAlertedPrayer.current !== alertKey) {
+            lastAlertedPrayer.current = alertKey;
+            // Güneş vakti için alert gösterme (namaz değil)
+            if (nextPrayer.name !== 'Güneş') {
+              setAlertData({ name: nextPrayer.name, time: nextPrayer.time });
+            }
+          }
           const updatedNextPrayer = getNextPrayer(prayerTimes);
           setNextPrayer(updatedNextPrayer);
         }
@@ -71,12 +81,10 @@ const HomePage = ({ darkMode, onNavigate }) => {
     try {
       const location = await getUserLocation();
       if (!location) throw new Error("Konum bilgisi alınamadı.");
-
       const [prayerResult, cityResult] = await Promise.all([
         getPrayerTimesByCoordinates(location.latitude, location.longitude),
         getCityFromCoordinates(location.latitude, location.longitude)
       ]);
-
       if (prayerResult.success && isMounted.current) {
         setPrayerTimes(prayerResult.timings);
         setNextPrayer(getNextPrayer(prayerResult.timings));
@@ -96,9 +104,7 @@ const HomePage = ({ darkMode, onNavigate }) => {
         <div style={{
           border: `4px solid ${darkMode ? '#374151' : '#f3f4f6'}`,
           borderTop: `4px solid ${darkMode ? '#10b981' : '#059669'}`,
-          borderRadius: '50%',
-          width: '50px',
-          height: '50px',
+          borderRadius: '50%', width: '50px', height: '50px',
           animation: 'spin 1s linear infinite'
         }}></div>
         <p style={{ color: darkMode ? '#d1d5db' : '#374151', marginTop: '20px' }}>Vakitler Güncelleniyor...</p>
@@ -109,8 +115,18 @@ const HomePage = ({ darkMode, onNavigate }) => {
 
   return (
     <div style={{padding: '10px'}}>
+      {/* Tam ekran vakit bildirimi */}
+      {alertData && (
+        <PrayerAlertOverlay
+          prayerName={alertData.name}
+          prayerTime={alertData.time}
+          darkMode={darkMode}
+          onDismiss={() => setAlertData(null)}
+        />
+      )}
+
       <NextPrayerCard nextPrayer={nextPrayer} countdown={countdown} darkMode={darkMode} locationName={locationName} />
-      <PrayerTimeCards prayerTimes={prayerTimes} darkMode={darkMode} />
+      <PrayerTimeCards prayerTimes={prayerTimes} darkMode={darkMode} themeColors={getHomeThemeColors(darkMode)} />
       <TabPanel darkMode={darkMode} />
       {error && !prayerTimes && (
         <div style={{textAlign: 'center', color: '#ef4444', padding: '10px', fontSize: '13px'}}>

@@ -1,41 +1,58 @@
-import { LocalNotifications } from '@capacitor/local-notifications';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 
 const NOTIFICATION_SETTINGS_KEY = 'quran_notification_settings';
+const DOWNLOADED_SOUNDS_KEY = 'downloaded_sounds';
 
-// 🎵 ZENGİNLEŞTİRİLMİŞ SES ARŞİVİ
+// 🎵 SES SEÇENEKLERİ
+// local: true → res/raw/ klasöründe, her zaman mevcut
+// local: false → indirilebilir, remoteUrl'den indirilir
 export const SOUND_OPTIONS = {
   adhan: [
-    { id: 'adhan_makkah', name: 'Mekke Ezanı', file: 'adhan_makkah.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan1.mp3' },
-    { id: 'adhan_madinah', name: 'Medine Ezanı', file: 'adhan_madinah.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan2.mp3' },
-    { id: 'adhan_istanbul_saba', name: 'İstanbul (Saba)', file: 'adhan_istanbul_saba.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan20.mp3' },
-    { id: 'adhan_istanbul_rast', name: 'İstanbul (Rast)', file: 'adhan_istanbul_rast.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan19.mp3' },
-    { id: 'adhan_egypt', name: 'Mısır Ezanı', file: 'adhan_egypt.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan3.mp3' },
-    { id: 'adhan_alaqsa', name: 'Mescid-i Aksa', file: 'adhan_alaqsa.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan4.mp3' },
-    { id: 'adhan_abdussamed', name: 'Abdulbasit Abdussamed', file: 'adhan_abdussamed.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan10.mp3' },
-    { id: 'adhan_dua', name: 'Ezan Duası', file: 'adhan_dua.mp3', remoteUrl: 'https://www.islamcan.com/audio/adhan/azan15.mp3' }
+    // Lokal (APK içinde)
+    { id: 'adhan1', name: 'Mekke Ezanı', file: 'adhan1.mp3', local: true },
+    { id: 'adhan2', name: 'Medine Ezanı', file: 'adhan2.mp3', local: true },
+    { id: 'adhan3', name: 'İstanbul Ezanı', file: 'adhan3.mp3', local: true },
+    { id: 'adhan4', name: 'Mısır Ezanı', file: 'adhan4.mp3', local: true },
+    { id: 'adhan5', name: 'Mescid-i Aksa', file: 'adhan5.mp3', local: true },
+    { id: 'adhan6', name: 'Abdulbasit', file: 'adhan6.mp3', local: true },
+    // İndirilebilir
+    { id: 'adhan_sudais', name: 'Abdurrahman Sudais', file: 'adhan_sudais.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan5.mp3' },
+    { id: 'adhan_mishary', name: 'Mishari Raşid', file: 'adhan_mishary.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan6.mp3' },
+    { id: 'adhan_ali_ahmed', name: 'Ali Ahmed Molla', file: 'adhan_ali_ahmed.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan7.mp3' },
+    { id: 'adhan_naqshbandi', name: 'Naqshbandi', file: 'adhan_naqshbandi.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan8.mp3' },
+    { id: 'adhan_qatami', name: 'Nasser Al Qatami', file: 'adhan_qatami.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan9.mp3' },
+    { id: 'adhan_sharif', name: 'Hafız Mustafa', file: 'adhan_sharif.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan11.mp3' },
+    { id: 'adhan_mansoor', name: 'Mansoor Zaahid', file: 'adhan_mansoor.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan12.mp3' },
+    { id: 'adhan_fajr', name: 'Sabah Ezanı (Özel)', file: 'adhan_fajr.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan14.mp3' },
   ],
   notification: [
-    { id: 'notif_short', name: 'Kısa Uyarı', file: 'notif_short.mp3', remoteUrl: 'https://www.soundjay.com/buttons/beep-07a.mp3' },
-    { id: 'notif_bell', name: 'Zil Sesi', file: 'notif_bell.mp3', remoteUrl: 'https://www.soundjay.com/buttons/beep-01a.mp3' },
-    { id: 'notif_digital', name: 'Dijital Bip', file: 'notif_digital.mp3', remoteUrl: 'https://www.soundjay.com/buttons/beep-08b.mp3' },
-    { id: 'notif_nature', name: 'Kuş Sesi', file: 'notif_nature.mp3', remoteUrl: 'https://www.soundjay.com/nature/bird-chirp-1.mp3' },
-    { id: 'notif_water', name: 'Su Damlası', file: 'notif_water.mp3', remoteUrl: 'https://www.soundjay.com/misc/water-droplet-1.mp3' },
-    { id: 'default', name: 'Sistem Varsayılanı', file: 'default' }
+    // Lokal
+    { id: 'notification1', name: 'Kısa Uyarı', file: 'notification1.mp3', local: true },
+    { id: 'notification2', name: 'Zil Sesi', file: 'notification2.mp3', local: true },
+    { id: 'notification3', name: 'Dijital Bip', file: 'notification3.mp3', local: true },
+    { id: 'notification4', name: 'Yumuşak Ton', file: 'notification4.mp3', local: true },
+    // İndirilebilir
+    { id: 'notif_beep1', name: 'Çift Bip', file: 'notif_beep1.mp3', local: false, remoteUrl: 'https://www.soundjay.com/buttons/beep-07a.mp3' },
+    { id: 'notif_chime', name: 'Çan Sesi', file: 'notif_chime.mp3', local: false, remoteUrl: 'https://www.soundjay.com/buttons/beep-01a.mp3' },
+    { id: 'notif_soft', name: 'Hafif Melodi', file: 'notif_soft.mp3', local: false, remoteUrl: 'https://www.soundjay.com/buttons/beep-08b.mp3' },
+    { id: 'notif_bird', name: 'Kuş Sesi', file: 'notif_bird.mp3', local: false, remoteUrl: 'https://www.soundjay.com/nature/bird-chirp-1.mp3' },
+    // Varsayılan
+    { id: 'default', name: 'Sistem Varsayılanı', file: 'default', local: true }
   ]
 };
 
 export const getDefaultNotificationSettings = () => ({
   enabled: true,
   sound: true,
-  vibration: true, // Genel titreşim
+  vibration: true,
   prayerNotifications: {
-    Fajr: { enabled: true, minutesBefore: 0, soundId: 'adhan_makkah', soundType: 'adhan', vibration: true },
-    Sunrise: { enabled: true, minutesBefore: 0, soundId: 'notif_short', soundType: 'notification', vibration: false },
-    Dhuhr: { enabled: true, minutesBefore: 0, soundId: 'adhan_istanbul_saba', soundType: 'adhan', vibration: true },
-    Asr: { enabled: true, minutesBefore: 0, soundId: 'adhan_istanbul_rast', soundType: 'adhan', vibration: true },
-    Maghrib: { enabled: true, minutesBefore: 0, soundId: 'adhan_egypt', soundType: 'adhan', vibration: true },
-    Isha: { enabled: true, minutesBefore: 0, soundId: 'adhan_madinah', soundType: 'adhan', vibration: true }
+    Fajr: { enabled: true, minutesBefore: 0, soundId: 'adhan1', soundType: 'adhan', vibration: true },
+    Sunrise: { enabled: true, minutesBefore: 0, soundId: 'notification1', soundType: 'notification', vibration: false },
+    Dhuhr: { enabled: true, minutesBefore: 0, soundId: 'adhan3', soundType: 'adhan', vibration: true },
+    Asr: { enabled: true, minutesBefore: 0, soundId: 'adhan4', soundType: 'adhan', vibration: true },
+    Maghrib: { enabled: true, minutesBefore: 0, soundId: 'adhan5', soundType: 'adhan', vibration: true },
+    Isha: { enabled: true, minutesBefore: 0, soundId: 'adhan2', soundType: 'adhan', vibration: true }
   }
 });
 
@@ -44,13 +61,9 @@ export const getNotificationSettings = () => {
     const settings = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
     if (!settings) return getDefaultNotificationSettings();
     const parsed = JSON.parse(settings);
-    // Veri yapısı kontrolü ve eksikleri tamamlama
     const defaults = getDefaultNotificationSettings();
     if (!parsed.prayerNotifications || !parsed.prayerNotifications.Fajr) return defaults;
-
-    // Titreşim ayarı globalde yoksa ekle
     if (parsed.vibration === undefined) parsed.vibration = true;
-
     return parsed;
   } catch (error) {
     return getDefaultNotificationSettings();
@@ -62,43 +75,70 @@ export const saveNotificationSettings = (settings) => {
   return true;
 };
 
+// Ses indirme durumunu kontrol et
+export const isSoundDownloaded = (soundId) => {
+  if (soundId === 'default') return true;
+
+  // Tüm ses listelerinde bul
+  const allSounds = [...SOUND_OPTIONS.adhan, ...SOUND_OPTIONS.notification];
+  const sound = allSounds.find(s => s.id === soundId);
+
+  // Lokal ses → her zaman mevcut
+  if (sound && sound.local) return true;
+
+  // İndirilebilir ses → downloaded listesinden kontrol
+  const downloaded = JSON.parse(localStorage.getItem(DOWNLOADED_SOUNDS_KEY) || '[]');
+  return downloaded.includes(soundId);
+};
+
+// Ses dosyasını indir (sadece indirilebilir sesler için)
 export const downloadAdhanSound = async (soundId, soundType) => {
   const soundList = SOUND_OPTIONS[soundType] || [];
   const sound = soundList.find(s => s.id === soundId);
-  if (!sound || !sound.remoteUrl) return false;
+
+  // Lokal ses veya remoteUrl yoksa
+  if (!sound || sound.local || !sound.remoteUrl) return true;
 
   try {
     const response = await fetch(sound.remoteUrl);
+    if (!response.ok) throw new Error('İndirme başarısız: ' + response.status);
+
     const blob = await response.blob();
-    const base64Data = await new Promise((resolve) => {
+    const base64Data = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = () => reject(new Error('Dosya okunamadı'));
       reader.readAsDataURL(blob);
     });
 
-    await Filesystem.writeFile({
-      path: `sounds/${sound.file}`,
-      data: base64Data,
-      directory: Directory.Data,
-      recursive: true
-    });
+    // Native platformda dosyayı kaydet
+    if (Capacitor.isNativePlatform()) {
+      await Filesystem.writeFile({
+        path: `sounds/${sound.file}`,
+        data: base64Data,
+        directory: Directory.Data,
+        recursive: true
+      });
+    }
 
-    const downloaded = JSON.parse(localStorage.getItem('downloaded_sounds') || '[]');
+    // İndirilenler listesine ekle
+    const downloaded = JSON.parse(localStorage.getItem(DOWNLOADED_SOUNDS_KEY) || '[]');
     if (!downloaded.includes(soundId)) {
       downloaded.push(soundId);
-      localStorage.setItem('downloaded_sounds', JSON.stringify(downloaded));
+      localStorage.setItem(DOWNLOADED_SOUNDS_KEY, JSON.stringify(downloaded));
     }
     return true;
   } catch (e) {
-    console.error('İndirme hatası:', e);
+    console.error('Ses indirme hatası:', e);
     return false;
   }
 };
 
-export const isSoundDownloaded = (soundId) => {
-  if (soundId === 'default') return true;
-  const downloaded = JSON.parse(localStorage.getItem('downloaded_sounds') || '[]');
-  return downloaded.includes(soundId);
+// İndirilen sesi sil
+export const deleteDownloadedSound = (soundId) => {
+  const downloaded = JSON.parse(localStorage.getItem(DOWNLOADED_SOUNDS_KEY) || '[]');
+  const filtered = downloaded.filter(id => id !== soundId);
+  localStorage.setItem(DOWNLOADED_SOUNDS_KEY, JSON.stringify(filtered));
 };
 
 export const createNotificationMessage = (prayerName, adjustment = 0) => {

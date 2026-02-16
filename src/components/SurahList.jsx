@@ -32,7 +32,7 @@ const SurahsView = ({ darkMode, onSurahClick }) => {
                 <div style={styles(darkMode).itemNumber}>{surah.number}</div>
                 <div>
                   <div style={styles(darkMode).itemTitle}>{surah.transliteration}</div>
-                  <div style={styles(darkMode).itemSubtitle}>{surah.totalAyahs} Ayet • {surah.revelationType === 'Meccan' ? 'Mekki' : 'Medeni'}</div>
+                  <div style={styles(darkMode).itemSubtitle}>{surah.totalAyahs} Ayet • {surah.revelationType === 'Meccan' ? '🕋 Mekki' : '🕌 Medeni'}{surah.meaning ? ` • "${surah.meaning}"` : ''}</div>
                 </div>
               </div>
               <div style={styles(darkMode).itemArabic}>{surah.name}</div>

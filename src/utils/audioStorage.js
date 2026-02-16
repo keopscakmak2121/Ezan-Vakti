@@ -1,188 +1,165 @@
-// src/utils/audioStorage.js
+// src/utils/audioStorage.js - Kari bazlı ses depolama
 
 const DB_NAME = 'QuranAudioDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'audioFiles';
 
-// IndexedDB başlatma
 const initDB = () => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () => {
-      console.error('❌ IndexedDB HATA:', request.error);
-      reject(request.error);
-    };
-    
-    request.onsuccess = () => {
-      console.log('✅ IndexedDB açıldı');
-      resolve(request.result);
-    };
-
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
     request.onupgradeneeded = (event) => {
-      console.log('🔧 IndexedDB oluşturuluyor...');
       const db = event.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-        objectStore.createIndex('surahNumber', 'surahNumber', { unique: false });
-        console.log('✅ Object store oluşturuldu');
+      if (db.objectStoreNames.contains(STORE_NAME)) {
+        db.deleteObjectStore(STORE_NAME);
       }
+      const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      store.createIndex('surahNumber', 'surahNumber', { unique: false });
+      store.createIndex('reciter', 'reciter', { unique: false });
     };
   });
 };
 
+const makeKey = (reciter, surahNumber, ayahNumber) => `${reciter}:${surahNumber}-${ayahNumber}`;
+
 // Ses dosyasını indir ve kaydet
-export const downloadAudio = async (surahNumber, ayahNumber, onProgress) => {
+export const downloadAudio = async (surahNumber, ayahNumber, onProgress, reciter = 'Alafasy_128kbps') => {
   try {
-    const url = `https://everyayah.com/data/Alafasy_128kbps/${String(surahNumber).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`;
-    
-    console.log(`📥 İndiriliyor: Sure ${surahNumber}, Ayet ${ayahNumber}`);
+    const url = `https://everyayah.com/data/${reciter}/${String(surahNumber).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`;
     
     const response = await fetch(url);
-    if (!response.ok) {
-      console.error('❌ Fetch başarısız:', response.status);
-      throw new Error('İndirme başarısız');
-    }
+    if (!response.ok) throw new Error('İndirme başarısız');
 
     const contentLength = response.headers.get('content-length');
     const total = parseInt(contentLength, 10);
     let loaded = 0;
-
     const reader = response.body.getReader();
     const chunks = [];
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
       chunks.push(value);
       loaded += value.length;
-
-      if (onProgress && total) {
-        onProgress(Math.round((loaded / total) * 100));
-      }
+      if (onProgress && total) onProgress(Math.round((loaded / total) * 100));
     }
 
     const blob = new Blob(chunks, { type: 'audio/mpeg' });
-    console.log(`📦 Blob oluşturuldu: ${blob.size} bytes`);
-    
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
 
     const audioData = {
-      id: `${surahNumber}-${ayahNumber}`,
+      id: makeKey(reciter, surahNumber, ayahNumber),
       surahNumber,
       ayahNumber,
+      reciter,
       blob,
       downloadDate: new Date().toISOString()
     };
 
     await new Promise((resolve, reject) => {
-      const request = store.put(audioData);
-      request.onsuccess = () => {
-        console.log(`✅ KAYDEDILDI: ${audioData.id}`);
-        resolve();
-      };
-      request.onerror = () => {
-        console.error(`❌ KAYDETME HATASI: ${audioData.id}`, request.error);
-        reject(request.error);
-      };
+      const req = store.put(audioData);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
     });
 
     return audioData;
   } catch (error) {
     console.error('❌ SES İNDİRME HATASI:', error);
-    console.error('URL:', `https://everyayah.com/data/Alafasy_128kbps/${String(surahNumber).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`);
     throw error;
   }
 };
 
 // Tüm sure seslerini indir
-export const downloadSurah = async (surahNumber, totalAyahs, onProgress) => {
-  console.log(`🎵 Sure indirme başladı: Sure ${surahNumber}, ${totalAyahs} ayet`);
+export const downloadSurah = async (surahNumber, totalAyahs, onProgress, reciter = 'Alafasy_128kbps') => {
   const results = [];
-  
   for (let i = 1; i <= totalAyahs; i++) {
     try {
       await downloadAudio(surahNumber, i, (progress) => {
         const overallProgress = Math.round(((i - 1) / totalAyahs * 100) + (progress / totalAyahs));
         if (onProgress) onProgress(overallProgress, i, totalAyahs);
-      });
+      }, reciter);
       results.push({ ayah: i, success: true });
     } catch (error) {
-      console.error(`❌ Ayet ${i} indirilemedi:`, error);
       results.push({ ayah: i, success: false, error });
     }
   }
-
-  console.log('✅ Sure indirme tamamlandı:', results);
   return results;
 };
 
-// Ses dosyasını getir
-export const getAudio = async (surahNumber, ayahNumber) => {
+// Ses dosyasını getir (kari bazlı)
+export const getAudio = async (surahNumber, ayahNumber, reciter) => {
+  if (!reciter) return null;
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], 'readonly');
     const store = transaction.objectStore(STORE_NAME);
 
-    return new Promise((resolve, reject) => {
-      const request = store.get(`${surahNumber}-${ayahNumber}`);
+    return new Promise((resolve) => {
+      const request = store.get(makeKey(reciter, surahNumber, ayahNumber));
       request.onsuccess = () => {
         if (request.result) {
-          const url = URL.createObjectURL(request.result.blob);
-          resolve(url);
+          resolve(URL.createObjectURL(request.result.blob));
         } else {
           resolve(null);
         }
       };
-      request.onerror = () => reject(request.error);
+      request.onerror = () => resolve(null);
     });
   } catch (error) {
-    console.error('Ses getirme hatası:', error);
     return null;
   }
 };
 
-// Sure indirilmiş mi kontrol et
-export const isSurahDownloaded = async (surahNumber, totalAyahs) => {
+// Sure indirilmiş mi kontrol et (kari bazlı)
+export const isSurahDownloaded = async (surahNumber, totalAyahs, reciter) => {
+  if (!reciter) return false;
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], 'readonly');
     const store = transaction.objectStore(STORE_NAME);
-    const index = store.index('surahNumber');
 
-    return new Promise((resolve) => {
-      const request = index.getAll(surahNumber);
-      request.onsuccess = () => {
-        resolve(request.result.length === totalAyahs);
-      };
-      request.onerror = () => resolve(false);
-    });
+    let count = 0;
+    for (let i = 1; i <= totalAyahs; i++) {
+      const exists = await new Promise((resolve) => {
+        const req = store.get(makeKey(reciter, surahNumber, i));
+        req.onsuccess = () => resolve(!!req.result);
+        req.onerror = () => resolve(false);
+      });
+      if (exists) count++;
+    }
+    return count === totalAyahs;
   } catch (error) {
     return false;
   }
 };
 
-// Sure seslerini sil
-export const deleteSurah = async (surahNumber, totalAyahs) => {
+// Sure seslerini sil (tüm kariler dahil)
+export const deleteSurah = async (surahNumber) => {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
 
-    for (let i = 1; i <= totalAyahs; i++) {
-      store.delete(`${surahNumber}-${i}`);
-    }
+    const allRequest = store.getAll();
+    await new Promise((resolve) => {
+      allRequest.onsuccess = () => {
+        allRequest.result
+          .filter(a => a.surahNumber === surahNumber)
+          .forEach(a => store.delete(a.id));
+        resolve();
+      };
+      allRequest.onerror = () => resolve();
+    });
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error);
+      transaction.onerror = () => resolve();
     });
   } catch (error) {
     console.error('Silme hatası:', error);
-    throw error;
   }
 };
 
@@ -196,17 +173,11 @@ export const getDownloadedSurahs = async () => {
     return new Promise((resolve) => {
       const request = store.getAll();
       request.onsuccess = () => {
-        const downloads = request.result;
-        console.log('📋 İndirilen dosyalar:', downloads.length);
         const surahMap = {};
-
-        downloads.forEach(audio => {
-          if (!surahMap[audio.surahNumber]) {
-            surahMap[audio.surahNumber] = [];
-          }
+        request.result.forEach(audio => {
+          if (!surahMap[audio.surahNumber]) surahMap[audio.surahNumber] = [];
           surahMap[audio.surahNumber].push(audio.ayahNumber);
         });
-
         resolve(surahMap);
       };
       request.onerror = () => resolve({});
@@ -226,9 +197,7 @@ export const getTotalSize = async () => {
     return new Promise((resolve) => {
       const request = store.getAll();
       request.onsuccess = () => {
-        const totalSize = request.result.reduce((sum, audio) => {
-          return sum + (audio.blob?.size || 0);
-        }, 0);
+        const totalSize = request.result.reduce((sum, a) => sum + (a.blob?.size || 0), 0);
         resolve(totalSize);
       };
       request.onerror = () => resolve(0);
@@ -238,7 +207,6 @@ export const getTotalSize = async () => {
   }
 };
 
-// Boyutu okunabilir formata çevir
 export const formatBytes = (bytes) => {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;

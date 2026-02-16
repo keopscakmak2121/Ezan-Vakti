@@ -97,3 +97,67 @@ export const getTranslationInfo = (translationId) => translations.find(t => t.id
 export const getArabicFontInfo = (fontId) => arabicFonts.find(f => f.id === fontId) || arabicFonts[0];
 export const getArabicFontFamily = (fontId) => getArabicFontInfo(fontId).family;
 export const getReaderTheme = (themeId) => readerThemes.find(t => t.id === themeId) || readerThemes[0];
+
+// === ANA SAYFA TEMA SİSTEMİ ===
+export const homeThemes = [
+  {
+    id: 'default',
+    name: 'Varsayılan',
+    preview: '🌙',
+    // Dark mode renkleri
+    dark: { bg: '#111827', cardBg: '#1f2937', accent: '#059669', text: '#f3f4f6', textSec: '#9ca3af' },
+    // Light mode renkleri
+    light: { bg: '#f9fafb', cardBg: '#ffffff', accent: '#059669', text: '#1f2937', textSec: '#6b7280' }
+  },
+  {
+    id: 'ocean',
+    name: 'Okyanus',
+    preview: '🌊',
+    dark: { bg: '#0c1929', cardBg: '#1a2d45', accent: '#0ea5e9', text: '#e0f2fe', textSec: '#7dd3fc' },
+    light: { bg: '#f0f9ff', cardBg: '#e0f2fe', accent: '#0284c7', text: '#0c4a6e', textSec: '#0369a1' }
+  },
+  {
+    id: 'emerald',
+    name: 'Zümrüt',
+    preview: '💚',
+    dark: { bg: '#022c22', cardBg: '#064e3b', accent: '#34d399', text: '#d1fae5', textSec: '#6ee7b7' },
+    light: { bg: '#ecfdf5', cardBg: '#d1fae5', accent: '#059669', text: '#064e3b', textSec: '#047857' }
+  },
+  {
+    id: 'sunset',
+    name: 'Gün Batımı',
+    preview: '🌅',
+    dark: { bg: '#1c1017', cardBg: '#2d1a24', accent: '#f97316', text: '#fff1e6', textSec: '#fdba74' },
+    light: { bg: '#fff7ed', cardBg: '#ffedd5', accent: '#ea580c', text: '#7c2d12', textSec: '#c2410c' }
+  },
+  {
+    id: 'royal',
+    name: 'Sultan',
+    preview: '👑',
+    dark: { bg: '#1a1025', cardBg: '#2e1a47', accent: '#a855f7', text: '#f3e8ff', textSec: '#c084fc' },
+    light: { bg: '#faf5ff', cardBg: '#f3e8ff', accent: '#9333ea', text: '#3b0764', textSec: '#7e22ce' }
+  },
+  {
+    id: 'desert',
+    name: 'Çöl',
+    preview: '🏜️',
+    dark: { bg: '#1c1a14', cardBg: '#2d2a1e', accent: '#d97706', text: '#fef3c7', textSec: '#fbbf24' },
+    light: { bg: '#fefce8', cardBg: '#fef9c3', accent: '#b45309', text: '#713f12', textSec: '#a16207' }
+  }
+];
+
+const HOME_THEME_KEY = 'home_theme';
+
+export const getHomeTheme = () => {
+  const themeId = localStorage.getItem(HOME_THEME_KEY) || 'default';
+  return homeThemes.find(t => t.id === themeId) || homeThemes[0];
+};
+
+export const saveHomeTheme = (themeId) => {
+  localStorage.setItem(HOME_THEME_KEY, themeId);
+};
+
+export const getHomeThemeColors = (darkMode) => {
+  const theme = getHomeTheme();
+  return darkMode ? theme.dark : theme.light;
+};

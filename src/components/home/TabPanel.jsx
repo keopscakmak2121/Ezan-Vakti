@@ -19,13 +19,18 @@ const TabPanel = ({ darkMode }) => {
       padding: '10px 20px',
       cursor: 'pointer',
       backgroundColor: 'transparent',
-      border: 'none',
+      // 'border: none' uyarısını önlemek için border'ı spesifik hale getirdik
+      borderLeft: 'none',
+      borderRight: 'none',
+      borderTop: 'none',
+      borderBottom: '2px solid transparent', 
       color: darkMode ? '#9ca3af' : '#6b7280',
       fontWeight: '600',
       fontSize: '16px',
     },
     activeTab: {
       color: darkMode ? '#10b981' : '#059669',
+      // Aktif olduğunda alttaki transparan çizgi renkleniyor
       borderBottom: `2px solid ${darkMode ? '#10b981' : '#059669'}`,
     },
     content: {

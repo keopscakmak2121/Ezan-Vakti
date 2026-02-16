@@ -17,9 +17,12 @@ import BookmarksPage from './components/BookmarksPage.jsx';
 import NotesPage from './components/NotesPage.jsx';
 import StatisticsPage from './components/StatisticsPage.jsx';
 import Downloads from './components/Downloads.jsx';
+import ImportantDays from './components/ImportantDays.jsx';
 import { initNotificationService } from './utils/notificationService.js';
 import { getPrayerTimesByCoordinates, getUserLocation, getCityFromCoordinates } from './utils/prayerTimesApi.js';
 import { getStoredPrayerTimes, storePrayerTimes } from './utils/storage.js';
+
+import { getHomeThemeColors } from './utils/settingsStorage.js';
 
 const App = () => {
   const [viewHistory, setViewHistory] = useState(['home']);
@@ -30,6 +33,7 @@ const App = () => {
     return saved ? JSON.parse(saved) : false;
   });
   const [toast, setToast] = useState({ show: false, message: '' });
+  const [themeVersion, setThemeVersion] = useState(0); // Tema değişikliğini tetiklemek için
 
   const currentView = viewHistory[viewHistory.length - 1];
   const backButtonExit = useRef(false);
@@ -142,15 +146,18 @@ const App = () => {
         return <StatisticsPage darkMode={darkMode} />;
       case 'prayerTimes': return <PrayerTimes darkMode={darkMode} />;
       case 'qibla': return <QiblaFinder darkMode={darkMode} />;
-      case 'settings': return <Settings darkMode={darkMode} toggleDarkMode={() => setDarkMode(!darkMode)} />;
+      case 'importantDays': return <ImportantDays darkMode={darkMode} />;
+      case 'settings': return <Settings darkMode={darkMode} toggleDarkMode={() => setDarkMode(!darkMode)} onThemeChange={() => setThemeVersion(v => v + 1)} />;
       case 'menu': return <Navigation darkMode={darkMode} onNavigate={handleNavigate} />;
       case 'esma': return <EsmaUlHusna darkMode={darkMode} />;
       default: return <HomePage darkMode={darkMode} onNavigate={handleNavigate} />;
     }
   };
 
+  const themeColors = getHomeThemeColors(darkMode);
+
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: darkMode ? '#111827' : '#f9fafb', userSelect: 'none', WebkitUserSelect: 'none' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: themeColors.bg, userSelect: 'none', WebkitUserSelect: 'none', transition: 'background-color 0.3s' }}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '70px' }}>
         {renderCurrentView()}
       </div>

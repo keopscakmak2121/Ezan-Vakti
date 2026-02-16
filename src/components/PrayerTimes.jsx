@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import {
   getPrayerTimesByCoordinates,
   getUserLocation,
+  getCityFromCoordinates,
   turkishCities,
   getNextPrayer
 } from '../utils/prayerTimesApi.js';
@@ -56,6 +57,9 @@ const PrayerTimes = ({ darkMode }) => {
         const coords = await getUserLocation();
         if (!coords) throw new Error("Konum alınamadı.");
         result = await getPrayerTimesByCoordinates(coords.latitude, coords.longitude);
+        if (result?.success) {
+          finalLocationName = await getCityFromCoordinates(coords.latitude, coords.longitude);
+        }
       } else {
         if (!selectedCity) return;
         const city = turkishCities.find(c => c.name === selectedCity);
@@ -130,7 +134,7 @@ const PrayerTimes = ({ darkMode }) => {
           <button onClick={() => setUseGPS(false)} style={{ flex: 1, padding: '10px', backgroundColor: !useGPS ? '#059669' : '#ccc', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px' }}>🏙️ Şehir Seç</button>
         </div>
         {!useGPS && (
-          <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '10px' }}>
+          <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '10px', backgroundColor: darkMode ? '#374151' : '#fff', color: darkMode ? '#f3f4f6' : '#1f2937' }}>
             <option value="">Şehir Seçin...</option>
             {turkishCities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>

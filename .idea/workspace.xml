@@ -5,27 +5,45 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b6ce7708-097c-4103-b282-8b57b8ef81e9" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/app/capacitor.build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/capacitor.build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/capacitor.settings.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/capacitor.settings.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/index-B49bmDJ3.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-1MAXhIfN.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-D6-RjtRe.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-QWTnPujt.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/index-DVKTtyH8.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/index-T5k-hgvO.css" beforeDir="false" afterPath="$PROJECT_DIR$/dist/assets/index-T5k-hgvO.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-897rlnTc.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-BUZETzdc.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-CLc-Lr3k.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-CzhmW_Hm.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/dist/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/git_dosyalar.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lokal_dosyalar.txt" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/FullScreenNotification.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/FullScreenNotification.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Downloads.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Downloads.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/EsmaUlHusna.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/EsmaUlHusna.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Navigation.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Navigation.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/PrayerTimes.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/PrayerTimes.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/Settings.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Settings.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Statistics.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Statistics.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/SurahList.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/SurahList.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/quran/AyahCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/AyahCard.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/quran/NoteModal.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/NoteModal.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/home/HomePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/home/HomePage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/home/NextPrayerCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/home/NextPrayerCard.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/home/PrayerTimeCards.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/home/PrayerTimeCards.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/home/TabPanel.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/home/TabPanel.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/home/prayerImages.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/home/prayerImages.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/quran/JuzReader.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/JuzReader.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/quran/QuranReader.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/QuranReader.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/quran/QuranSettings.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/QuranSettings.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/quran/SurahHeader.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/SurahHeader.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/settings/Settings.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/settings/Settings.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/esmaUlHusna.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/esmaUlHusna.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/esmas.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/esmas.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/hadiths.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/hadiths.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/surahs.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/surahs.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/verses.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/verses.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/audioStorage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/audioStorage.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/notificationService.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/notificationService.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/notificationStorage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/notificationStorage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/prayerTimesApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/prayerTimesApi.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/settingsStorage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/settingsStorage.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -63,10 +81,10 @@
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;com.google.services.firebase.aqiPopupShown&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Projects/Ezan-Vakti/android/app/src/main/res/raw&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Projects/Ezan-Vakti&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;
   }
 }</component>

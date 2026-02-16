@@ -31,11 +31,11 @@ const Downloads = ({ darkMode, onSurahClick }) => {
   };
 
   const handleDelete = async (surah) => {
-    if (window.confirm(`${surah.name} suresini silmek istediğinize emin misiniz?`)) {
+    if (window.confirm(`${surah.transliteration} suresini silmek istediğinize emin misiniz?`)) {
       try {
         await deleteSurah(surah.number, surah.ayahCount);
         await loadDownloads();
-        alert(`${surah.name} suresi silindi.`);
+        alert(`${surah.transliteration} suresi silindi.`);
       } catch (error) {
         console.error('Silme hatası:', error);
         alert('Silme sırasında bir hata oluştu.');
@@ -125,7 +125,7 @@ const Downloads = ({ darkMode, onSurahClick }) => {
                   color: text,
                   marginBottom: '5px'
                 }}>
-                  {surah.number}. {surah.name} ({surah.nameArabic})
+                  {surah.number}. {surah.transliteration} ({surah.transliterationArabic})
                 </div>
                 <div style={{ fontSize: '14px', color: textSec }}>
                   {surah.ayahCount} Ayet • {downloadedSurahs[surah.number]?.length || 0} ses dosyası

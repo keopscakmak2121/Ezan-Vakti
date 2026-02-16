@@ -9,16 +9,18 @@ import {
 } from '../utils/notificationStorage';
 import { getStoredPrayerTimes } from '../utils/storage';
 import { scheduleNotifications } from '../utils/notificationService';
+import { homeThemes, getHomeTheme, saveHomeTheme } from '../utils/settingsStorage';
 import {
   Bell, Moon, Volume2, Activity, RotateCcw,
-  ChevronDown, ChevronUp, Play, Square, Download, Check, Smartphone
+  ChevronDown, ChevronUp, Play, Square, Download, Check, Smartphone, Palette
 } from 'lucide-react';
 
-const Settings = ({ darkMode, toggleDarkMode }) => {
+const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
   const [settings, setSettings] = useState(getNotificationSettings());
   const [expandedPrayer, setExpandedPrayer] = useState(null);
   const [playingSound, setPlayingSound] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
+  const [selectedTheme, setSelectedTheme] = useState(getHomeTheme().id);
   const audioRef = useRef(new Audio());
 
   const prayerNames = {
@@ -80,7 +82,11 @@ const Settings = ({ darkMode, toggleDarkMode }) => {
     const success = await downloadAdhanSound(soundId, soundType);
     setDownloadingId(null);
     if (success) {
-      setSettings(getNotificationSettings());
+      alert('✅ Ses başarıyla indirildi!');
+      // State'i yeniden yükle — UI güncellenir
+      setSettings({ ...getNotificationSettings() });
+    } else {
+      alert('❌ İndirme başarısız. İnternet bağlantınızı kontrol edin.');
     }
   };
 
@@ -125,6 +131,40 @@ const Settings = ({ darkMode, toggleDarkMode }) => {
         <div style={styles.row}>
           <div style={styles.labelContainer}><Moon size={20} /><span style={styles.label}>Karanlık Mod</span></div>
           <Toggle checked={darkMode} onChange={toggleDarkMode} />
+        </div>
+
+        {/* Ana Sayfa Tema Seçimi */}
+        <div style={{ padding: '12px 0', borderBottom: `1px solid ${darkMode ? '#374151' : '#f3f4f6'}` }}>
+          <div style={{ ...styles.labelContainer, marginBottom: '12px' }}>
+            <Palette size={20} />
+            <span style={styles.label}>Ana Sayfa Teması</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {homeThemes.map(theme => {
+              const colors = darkMode ? theme.dark : theme.light;
+              const isSelected = selectedTheme === theme.id;
+              return (
+                <div key={theme.id} onClick={() => {
+                  setSelectedTheme(theme.id);
+                  saveHomeTheme(theme.id);
+                  if (onThemeChange) onThemeChange(theme.id);
+                }} style={{
+                  padding: '12px 8px',
+                  borderRadius: '12px',
+                  border: isSelected ? `2px solid ${colors.accent}` : `2px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
+                  backgroundColor: colors.cardBg,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.2s',
+                  transform: isSelected ? 'scale(1.02)' : 'scale(1)'
+                }}>
+                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>{theme.preview}</div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: colors.text }}>{theme.name}</div>
+                  {isSelected && <div style={{ fontSize: '10px', color: colors.accent, marginTop: '2px', fontWeight: '700' }}>✓ Aktif</div>}
+                </div>
+              );
+            })}
+          </div>
         </div>
         <div style={styles.row}>
           <div style={styles.labelContainer}><Smartphone size={20} /><span style={styles.label}>Genel Titreşim</span></div>
@@ -178,21 +218,54 @@ const Settings = ({ darkMode, toggleDarkMode }) => {
 
                     <div style={{ marginBottom: '15px' }}>
                       <span style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>Ses Seçimi</span>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <select style={{...styles.select, flex: 1}} value={soundId} onChange={(e) => handlePrayerSettingChange(key, 'soundId', e.target.value)}>
-                          {(SOUND_OPTIONS[soundType] || []).map(s => (
-                            <option key={s.id} value={s.id}>{s.name} {!isSoundDownloaded(s.id) && s.id !== 'default' ? '(Bulut)' : ''}</option>
+                      <select style={{...styles.select, width: '100%', marginBottom: '10px', boxSizing: 'border-box'}} value={soundId} onChange={(e) => {
+                        const newSoundId = e.target.value;
+                        const allSounds = [...SOUND_OPTIONS.adhan, ...SOUND_OPTIONS.notification];
+                        const selectedSound = allSounds.find(s => s.id === newSoundId);
+                        // İndirilmemiş ses seçildiyse uyar
+                        if (selectedSound && !selectedSound.local && !isSoundDownloaded(newSoundId) && newSoundId !== 'default') {
+                          handlePrayerSettingChange(key, 'soundId', newSoundId);
+                          alert('Bu ses henüz indirilmedi. Aşağıdaki İndir butonuna basarak sesi indirin.');
+                        } else {
+                          handlePrayerSettingChange(key, 'soundId', newSoundId);
+                        }
+                      }}>
+                        <optgroup label="📱 Yüklü Sesler">
+                          {(SOUND_OPTIONS[soundType] || []).filter(s => s.local).map(s => (
+                            <option key={s.id} value={s.id}>✅ {s.name}</option>
                           ))}
-                        </select>
-                        <button onClick={() => handlePreviewSound(soundId, soundType)} style={{ padding: '8px', borderRadius: '8px', border: 'none', backgroundColor: '#059669', color: 'white' }}>
-                          {playingSound === soundId ? <Square size={16} fill="white" /> : <Play size={16} fill="white" />}
+                        </optgroup>
+                        <optgroup label="☁️ İndirilebilir Sesler">
+                          {(SOUND_OPTIONS[soundType] || []).filter(s => !s.local && s.id !== 'default').map(s => (
+                            <option key={s.id} value={s.id}>{isSoundDownloaded(s.id) ? '✅' : '⬇️'} {s.name}</option>
+                          ))}
+                        </optgroup>
+                      </select>
+
+                      {/* Dinle butonu */}
+                      <button onClick={() => handlePreviewSound(soundId, soundType)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: playingSound === soundId ? '#dc2626' : '#059669', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', marginBottom: '8px', boxSizing: 'border-box', cursor: 'pointer' }}>
+                        {playingSound === soundId ? <><Square size={16} fill="white" /> Durdur</> : <><Play size={16} fill="white" /> Dinle</>}
+                      </button>
+
+                      {/* İndir butonu — sadece indirilebilir ve henüz indirilmemiş sesler */}
+                      {!isDownloaded && soundId !== 'default' && (
+                        <button onClick={() => handleDownload(soundId, soundType)} disabled={downloadingId === soundId} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: downloadingId === soundId ? '#6b7280' : '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box', cursor: downloadingId === soundId ? 'wait' : 'pointer' }}>
+                          {downloadingId === soundId ? '⏳ İndiriliyor...' : <><Download size={16} /> İndir</>}
                         </button>
-                        {!isDownloaded && soundId !== 'default' && (
-                          <button onClick={() => handleDownload(soundId, soundType)} style={{ padding: '8px', borderRadius: '8px', border: 'none', backgroundColor: '#3b82f6', color: 'white' }}>
-                            {downloadingId === soundId ? '...' : <Download size={16} />}
-                          </button>
-                        )}
-                      </div>
+                      )}
+
+                      {/* İndirildi göstergesi — indirilebilir ve indirilmiş sesler */}
+                      {isDownloaded && soundId !== 'default' && (() => {
+                        const allSounds = [...SOUND_OPTIONS.adhan, ...SOUND_OPTIONS.notification];
+                        const s = allSounds.find(x => x.id === soundId);
+                        return s && !s.local;
+                      })() && (
+                        <div style={{ textAlign: 'center', padding: '10px', color: '#f59e0b', fontSize: '12px', backgroundColor: darkMode ? '#1f2937' : '#fefce8', borderRadius: '8px', marginTop: '6px', lineHeight: '1.5' }}>
+                          ✅ İndirildi — Dinle ile önizleyebilirsiniz.<br/>
+                          ⚠️ Bildirimde varsayılan ezan/bildirim sesi çalar.<br/>
+                          <span style={{ fontSize: '11px', opacity: 0.7 }}>(Gelecek güncellemede bildirimde de bu ses çalacak)</span>
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

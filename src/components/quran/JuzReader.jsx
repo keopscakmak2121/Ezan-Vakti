@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { juzData } from '../../data/juz-data.js';
+import { getSettings, getReaderTheme } from '../../utils/settingsStorage.js';
 import SurahHeader from './SurahHeader'; 
 
 const JuzReader = ({ juzNumber, darkMode, onBack }) => {
@@ -8,6 +9,11 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [currentSurahNum, setCurrentSurahNum] = useState(null);
   const observer = useRef();
+
+  // Kuran okuyucu ayarlarını al — tema, font boyutu vs.
+  const settings = getSettings();
+  const theme = getReaderTheme(settings.readerTheme);
+  const isDark = settings.readerTheme === 'dark' || settings.readerTheme === 'black';
 
   useEffect(() => {
     const juzInfo = juzData[juzNumber];
@@ -58,15 +64,26 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
   }, {});
 
   return (
-    <div>
+    <div style={{ backgroundColor: theme.bg, minHeight: '100vh', transition: 'background-color 0.3s' }}>
       {/* Sticky Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10, background: darkMode ? '#1f2937' : '#f9fafb', padding: '10px 5px' }}>
-          <button onClick={onBack} style={{ border: 'none', background: 'transparent', color: darkMode ? 'white' : 'black', fontSize: '24px' }}>←</button>
-          <h2 style={{ color: darkMode ? 'white' : 'black', margin: 0, fontSize: '20px' }}>Cüz {juzNumber}</h2>
-          <div style={{width: '44px'}}></div>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        position: 'sticky', top: 0, zIndex: 10,
+        background: theme.bg,
+        padding: '10px 5px',
+        borderBottom: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`
+      }}>
+        <button onClick={onBack} style={{ border: 'none', background: 'transparent', color: theme.text, fontSize: '24px', padding: '10px' }}>←</button>
+        <h2 style={{ color: theme.text, margin: 0, fontSize: '20px' }}>Cüz {juzNumber}</h2>
+        <div style={{width: '44px'}}></div>
       </div>
       
-      {loading && <div style={{ textAlign: 'center', padding: '40px' }}>Yükleniyor...</div>}
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '40px', color: theme.sub }}>
+          <div style={{ fontSize: '30px', marginBottom: '10px' }}>📖</div>
+          Yükleniyor...
+        </div>
+      )}
 
       {/* Page Content */}
       <div style={{ padding: '5px' }}>
@@ -75,12 +92,19 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
           const surahVerses = surahsToRender[surahNum];
           return (
             <div key={surahNum}>
-              {surahInfo && <SurahHeader surah={surahInfo} darkMode={darkMode} />}
-              <div lang="ar" dir="rtl" style={{ textAlign: 'justify', fontSize: '24px', lineHeight: '2.8', fontFamily: "'Amiri', serif", color: darkMode ? '#f3f4f6' : '#1f2937' }}>
+              {surahInfo && <SurahHeader surah={surahInfo} darkMode={isDark} />}
+              <div lang="ar" dir="rtl" style={{
+                textAlign: 'justify',
+                fontSize: `${settings.fontSize || 24}px`,
+                lineHeight: settings.lineHeight || '2.8',
+                fontFamily: "'Amiri', serif",
+                color: theme.text,
+                padding: '0 10px'
+              }}>
                 {surahVerses.map((verse, vIndex) => (
                   <span key={verse.id} ref={index === Object.keys(surahsToRender).length - 1 && vIndex === surahVerses.length - 1 ? lastAyahElementRef : null}>
                     <span className="tajweed-text" dangerouslySetInnerHTML={{ __html: verse.text_uthmani_tajweed }} />
-                    <span style={{ color: darkMode ? '#059669' : '#10b981', fontWeight: 'bold' }}>﴿{verse.verse_number}﴾</span>
+                    <span style={{ color: '#059669', fontWeight: 'bold' }}>﴿{verse.verse_number}﴾</span>
                   </span>
                 ))}
               </div>

@@ -8,6 +8,7 @@ export const menuItems = [
   { id: 'notes', icon: '📝', text: 'Notlarım' },
   { id: 'downloads', icon: '💾', text: 'İndirilenler' },
   { id: 'prayerTimes', icon: '🕌', text: 'Namaz Vakitleri' },
+  { id: 'importantDays', icon: '📅', text: 'Önemli Günler' },
   { id: 'qibla', icon: '🧭', text: 'Kıble' },
   { id: 'stats', icon: '📊', text: 'İstatistikler' },
   { id: 'settings', icon: '⚙️', text: 'Ayarlar' }

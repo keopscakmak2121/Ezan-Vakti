@@ -63,7 +63,7 @@ setBookmarksCount(bookmarks.length);
 
   const getSurahName = (surahNumber) => {
     const surah = allSurahs.find(s => s.number === surahNumber);
-    return surah ? surah.name : 'Bilinmeyen';
+    return surah ? surah.transliteration : 'Bilinmeyen';
   };
 
   const formatDuration = (minutes) => {

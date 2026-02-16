@@ -1,0 +1,7 @@
+cd C:\Projects\Ezan-Vakti
+npx vite --host 
+
+
+
+cmd den çalıştır  çıkan adresi webden gir
+

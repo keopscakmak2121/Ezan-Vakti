@@ -147,6 +147,11 @@ const EsmaUlHusna = ({ darkMode }) => {
                     fontStyle: 'italic'
                   }}>
                     {esma.meaning}
+                    {esma.quranCount > 0 && (
+                      <span style={{ display: 'block', fontSize: '12px', color: '#059669', fontStyle: 'normal', marginTop: '4px' }}>
+                        📖 Kur'an'da {esma.quranCount} kez geçer
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -196,6 +201,20 @@ const EsmaUlHusna = ({ darkMode }) => {
                     {esma.meaning}
                   </p>
                 </div>
+
+                {/* Kur'an'da Geçiş */}
+                {esma.quranCount > 0 && (
+                  <div style={{ 
+                    marginBottom: '15px',
+                    padding: '12px',
+                    backgroundColor: darkMode ? '#1f2937' : '#ecfdf5',
+                    borderRadius: '10px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#059669' }}>{esma.quranCount}</div>
+                    <div style={{ fontSize: '13px', color: textSec }}>Kur'an'da geçiş sayısı</div>
+                  </div>
+                )}
 
                 {/* Geçtiği Ayetler */}
                 <div>
