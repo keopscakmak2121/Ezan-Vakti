@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { allSurahs } from '../data/surahs';
-import { allJuz } from '../data/juz'; // Import Juz data
+import { allJuz } from '../data/juz';
+import MushafView from './quran/MushafView.jsx';
 
 // Separate component for the list of surahs
 const SurahsView = ({ darkMode, onSurahClick }) => {
@@ -114,7 +115,7 @@ const SurahList = ({ darkMode, onSurahClick, onJuzClick }) => {
           onClick={() => setActiveTab('surah')} 
           style={{ ...styles(darkMode).tabButton, ...(activeTab === 'surah' && styles(darkMode).activeTab) }}
         >
-          Sure (Fihrist)
+          Sure
         </button>
         <button 
           onClick={() => setActiveTab('juz')} 
@@ -122,12 +123,17 @@ const SurahList = ({ darkMode, onSurahClick, onJuzClick }) => {
         >
           Cüz
         </button>
+        <button 
+          onClick={() => setActiveTab('mushaf')} 
+          style={{ ...styles(darkMode).tabButton, ...(activeTab === 'mushaf' && styles(darkMode).activeTab) }}
+        >
+          📖 Mushaf
+        </button>
       </div>
 
-      {activeTab === 'surah' ? 
-        <SurahsView darkMode={darkMode} onSurahClick={onSurahClick} /> : 
-        <JuzView darkMode={darkMode} onJuzClick={onJuzClick} />
-      }
+      {activeTab === 'surah' && <SurahsView darkMode={darkMode} onSurahClick={onSurahClick} />}
+      {activeTab === 'juz' && <JuzView darkMode={darkMode} onJuzClick={onJuzClick} />}
+      {activeTab === 'mushaf' && <MushafView darkMode={darkMode} />}
     </div>
   );
 };
