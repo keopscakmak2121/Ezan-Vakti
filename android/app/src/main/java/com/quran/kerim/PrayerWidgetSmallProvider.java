@@ -48,8 +48,7 @@ public class PrayerWidgetSmallProvider extends AppWidgetProvider {
             try {
                 JSONObject timings = new JSONObject(prayerDataStr);
                 Calendar now = Calendar.getInstance();
-                // Saniye hassasiyetiyle şu anki toplam saniyeyi hesapla
-                int currentTotalSeconds = now.get(Calendar.HOUR_OF_DAY) * 3600 + now.get(Calendar.MINUTE) * 60 + now.get(Calendar.SECOND);
+                int currentTotalSec = now.get(Calendar.HOUR_OF_DAY) * 3600 + now.get(Calendar.MINUTE) * 60 + now.get(Calendar.SECOND);
 
                 String[] names = {"Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"};
                 String[] trNames = {"İmsak", "Güneş", "Öğle", "İkindi", "Akşam", "Yatsı"};
@@ -60,29 +59,44 @@ public class PrayerWidgetSmallProvider extends AppWidgetProvider {
                     if (timeStr == null || timeStr.isEmpty()) continue;
 
                     String[] parts = timeStr.split(":");
-                    int pTotalSeconds = Integer.parseInt(parts[0]) * 3600 + Integer.parseInt(parts[1]) * 60;
+                    int pTotalSeconds = Integer.parseInt(parts[0].trim()) * 3600 + Integer.parseInt(parts[1].trim()) * 60;
 
-                    if (currentTotalSeconds < pTotalSeconds) {
-                        int diffSeconds = pTotalSeconds - currentTotalSeconds;
+                    if (currentTotalSec < pTotalSeconds) {
+                        int diffSeconds = pTotalSeconds - currentTotalSec;
                         int h = diffSeconds / 3600;
                         int m = (diffSeconds % 3600) / 60;
-                        int s = diffSeconds % 60;
-
+                        
                         views.setTextViewText(R.id.widget_small_prayer_name, trNames[i]);
                         views.setTextViewText(R.id.widget_small_prayer_time, timeStr);
-                        views.setTextViewText(R.id.widget_small_remaining_time, String.format("%02d:%02d:%02d", h, m, s));
+                        views.setTextViewText(R.id.widget_small_remaining_time, String.format("-%02d:%02d", h, m));
                         found = true;
                         break;
                     }
                 }
                 
                 if (!found) {
+                    // Yatsıdan sonra Yarın İmsak'a kadar olan süreyi hesapla
+                    String fajrTime = timings.optString("Fajr", "--:--");
                     views.setTextViewText(R.id.widget_small_prayer_name, "Yarın İmsak");
-                    views.setTextViewText(R.id.widget_small_remaining_time, "--:--:--");
+                    views.setTextViewText(R.id.widget_small_prayer_time, fajrTime);
+                    
+                    try {
+                        String[] parts = fajrTime.split(":");
+                        int fSec = Integer.parseInt(parts[0].trim()) * 3600 + Integer.parseInt(parts[1].trim()) * 60;
+                        int diffSeconds = (86400 - currentTotalSec) + fSec;
+                        int h = diffSeconds / 3600;
+                        int m = (diffSeconds % 3600) / 60;
+                        views.setTextViewText(R.id.widget_small_remaining_time, String.format("-%02d:%02d", h, m));
+                    } catch (Exception e) {
+                        views.setTextViewText(R.id.widget_small_remaining_time, "--:--");
+                    }
                 }
             } catch (Exception e) {
                 Log.e("PrayerWidgetSmall", "Hata", e);
+                views.setTextViewText(R.id.widget_small_remaining_time, "Hata");
             }
+        } else {
+             views.setTextViewText(R.id.widget_small_remaining_time, "Yükleniyor...");
         }
     }
 }

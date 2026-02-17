@@ -1,0 +1,73 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Ana Bina (Krem/Sarı tonları) -->
+    <path
+        android:fillColor="#FDE68A"
+        android:pathData="M30,70 L78,70 L78,95 L30,95 Z" />
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M54,70 L78,70 L78,95 L54,95 Z" />
+
+    <!-- Orta Büyük Kubbe (Zümrüt Yeşil) -->
+    <path
+        android:fillColor="#059669"
+        android:pathData="M38,70 C38,61.16 45.16,54 54,54 C62.84,54 70,61.16 70,70 L38,70 Z" />
+    <path
+        android:fillColor="#047857"
+        android:pathData="M54,54 C62.84,54 70,61.16 70,70 L54,70 Z" />
+
+    <!-- Kubbe Çizgileri (Detay) -->
+    <path
+        android:strokeColor="#065F46"
+        android:strokeWidth="0.5"
+        android:pathData="M54,54 V70 M46,56 V70 M62,56 V70 M41,62 V70 M67,62 V70" />
+
+    <!-- Hilal (Kubbe Üstü) -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M54,48 C52.9,48 52,48.9 52,50 C52,51.1 52.9,52 54,52 C55.1,52 56,51.1 56,50 C56,49.45 55.78,48.95 55.41,48.59 C56.37,48.16 57,47.16 57,46 C57,44.34 55.66,43 54,43 C52.34,43 51,44.34 51,46 C51,47.16 51.63,48.16 52.59,48.59 C52.22,48.95 52,49.45 52,50 Z" />
+
+    <!-- Yan Küçük Kubbeler -->
+    <path
+        android:fillColor="#059669"
+        android:pathData="M30,75 C30,71.69 32.69,69 36,69 C39.31,69 42,75 L30,75 Z" />
+    <path
+        android:fillColor="#059669"
+        android:pathData="M66,75 C66,71.69 68.69,69 72,69 C75.31,69 78,75 L66,75 Z" />
+
+    <!-- Minareler (Sol ve Sağ) -->
+    <path
+        android:fillColor="#FDE68A"
+        android:pathData="M22,30 L26,30 L26,95 L22,95 Z" />
+    <path
+        android:fillColor="#059669"
+        android:pathData="M22,30 L24,15 L26,30 Z" />
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M82,30 L86,30 L86,95 L82,95 Z" />
+    <path
+        android:fillColor="#047857"
+        android:pathData="M82,30 L84,15 L86,30 Z" />
+
+    <!-- EZAN VAKTİ Yazısı (Vektörel harf simülasyonu) -->
+    <!-- Bu kısım orta boşlukta metin görüntüsü oluşturur -->
+    <path
+        android:fillColor="#3E2723"
+        android:pathData="M38,40 h2 v5 h-2 z M41,40 h3 v1 h-2 v1 h1 v1 h-1 v1 h2 v1 h-3 z M45,40 l1.5,5 l1.5,-5 h-3 z M49,40 h1 v5 h1 v-5 h1 v5 h-3 z" /> <!-- EZAN (Basitleştirilmiş) -->
+    <path
+        android:fillColor="#3E2723"
+        android:pathData="M58,40 l1,5 l1,-5 h-2 z M61,40 h2 v5 h-2 z M64,40 h1 v5 h1 v-5 h1 v5 h-3 z M68,40 h3 v1 h-1 v4 h-1 v-4 h-1 z M72,40 h1 v5 h-1 z" /> <!-- VAKTI (Basitleştirilmiş) -->
+
+    <!-- Kapı ve Pencereler -->
+    <path
+        android:fillColor="#451A03"
+        android:pathData="M51,85 C51,82.79 52.34,81 54,81 C55.66,81 57,82.79 57,85 L57,95 L51,95 Z" />
+    <path
+        android:fillColor="#451A03"
+        android:pathData="M34,80 h2 v4 h-2 z M40,80 h2 v4 h-2 z M66,80 h2 v4 h-2 z M72,80 h2 v4 h-2 z" />
+
+</vector>

@@ -25,7 +25,8 @@ const getDefaultSettings = () => ({
   showTranslation: true,
   notificationsEnabled: true,
   arabicFont: 'amiri',
-  showTajweed: true
+  showTajweed: true,
+  keepScreenOn: true // Yeni: Okuma yaparken ekranı açık tut
 });
 
 export const translations = [

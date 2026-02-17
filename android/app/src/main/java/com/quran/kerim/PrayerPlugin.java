@@ -47,10 +47,18 @@ public class PrayerPlugin extends Plugin {
         call.resolve();
     }
 
+    @PluginMethod
+    public void setFullScreenEnabled(PluginCall call) {
+        Boolean enabled = call.getBoolean("enabled", true);
+        SharedPreferences prefs = getContext().getSharedPreferences("PrayerWidgetPrefs", Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("full_screen_enabled", enabled).apply();
+        call.resolve();
+    }
+
     private void saveToWidgetStorage(String prayerData) {
         SharedPreferences prefs = getContext().getSharedPreferences("PrayerWidgetPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("prayer_data", prayerData);
-        editor.apply(); // Değişikliği hemen uygula
+        editor.apply();
     }
 }

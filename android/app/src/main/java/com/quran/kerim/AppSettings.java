@@ -5,8 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
-import android.os.PowerManager;
 import android.provider.Settings;
+import android.view.WindowManager;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -16,13 +16,28 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 public class AppSettings extends Plugin {
 
     @PluginMethod
+    public void setKeepScreenOn(PluginCall call) {
+        final Boolean keepOn = call.getBoolean("keepOn", false);
+        getBridge().executeOnMainThread(new Runnable() {
+            @Override
+            public void run() {
+                if (Boolean.TRUE.equals(keepOn)) {
+                    getBridge().getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                } else {
+                    getBridge().getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                }
+                call.resolve();
+            }
+        });
+    }
+
+    @PluginMethod
     public void openBatteryOptimizationSettings(PluginCall call) {
         try {
             Intent intent = new Intent();
             String packageName = getContext().getPackageName();
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                // Her zaman doğrudan uygulama için izin penceresi aç
                 intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
                 intent.setData(Uri.parse("package:" + packageName));
             } else {
@@ -32,7 +47,6 @@ public class AppSettings extends Plugin {
             getActivity().startActivity(intent);
             call.resolve();
         } catch (Exception e) {
-            // Bazı cihazlarda doğrudan istek desteklenmez, genel sayfayı aç
             try {
                 Intent fallback = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
                 getActivity().startActivity(fallback);

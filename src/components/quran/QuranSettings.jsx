@@ -80,6 +80,11 @@ const QuranSettings = ({ darkMode, onBack, settings, onSettingsChange }) => {
           </div>
         </div>
 
+        {/* KEEP SCREEN ON */}
+        <SettingRow label="Ekranı Açık Tut" subtitle="Okuma sırasında ekran kapanmaz" darkMode={darkMode}>
+          <ToggleSwitch checked={settings.keepScreenOn} onChange={(e) => handleSettingChange('keepScreenOn', e.target.checked)} />
+        </SettingRow>
+
         {/* AUTO PLAY */}
         <SettingRow label="Otomatik Devam Et" subtitle="Ayet bitince sonrakine geçer" darkMode={darkMode}>
           <ToggleSwitch checked={settings.autoPlay} onChange={(e) => handleSettingChange('autoPlay', e.target.checked)} />

@@ -5,6 +5,7 @@ import { getAudio, downloadAudio, downloadSurah } from '../../utils/audioStorage
 import AyahCard from './AyahCard';
 import QuranSettings from './QuranSettings'; 
 import SurahHeader from './SurahHeader'; 
+import AppSettings from '../../utils/appSettingsPlugin.js';
 
 const QuranReader = ({ surahNumber, darkMode, onBack }) => {
   const [surahData, setSurahData] = useState(null);
@@ -22,8 +23,22 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
   const audioRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Yeni: Seçili temayı al
+  // Seçili temayı al
   const theme = getReaderTheme(settings.readerTheme);
+
+  // Ekranı açık tutma ayarı kontrolü
+  useEffect(() => {
+    if (settings.keepScreenOn) {
+      AppSettings.setKeepScreenOn({ keepOn: true });
+    } else {
+      AppSettings.setKeepScreenOn({ keepOn: false });
+    }
+
+    return () => {
+      // Bileşen kapandığında ekranı normale döndür
+      AppSettings.setKeepScreenOn({ keepOn: false });
+    };
+  }, [settings.keepScreenOn]);
 
   useEffect(() => {
     fetchSurah(settings.translation);
@@ -225,7 +240,6 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
                     setAllVerses([...allVerses]);
                   }}
                   onNoteChange={() => setAllVerses([...allVerses])}
-                  // Özel tema renklerini AyahCard'a aktarabiliriz
                   theme={theme}
                 />
               </div>

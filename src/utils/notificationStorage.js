@@ -38,7 +38,8 @@ export const getDefaultNotificationSettings = () => ({
   enabled: true,
   sound: true,
   vibration: true,
-  ongoingEnabled: false, // Yeni ayar: Başlangıçta kapalı
+  ongoingEnabled: false,
+  fullScreenEnabled: true, // Yeni ayar: Tam Ekran Bildirim
   prayerNotifications: {
     Fajr: { enabled: true, minutesBefore: 0, soundId: 'adhan1', soundType: 'adhan', vibration: true },
     Sunrise: { enabled: true, minutesBefore: 0, soundId: 'notification1', soundType: 'notification', vibration: false },
@@ -60,6 +61,7 @@ export const getNotificationSettings = () => {
     if (!parsed.prayerNotifications || !parsed.prayerNotifications.Fajr) return defaults;
     if (parsed.vibration === undefined) parsed.vibration = true;
     if (parsed.ongoingEnabled === undefined) parsed.ongoingEnabled = false;
+    if (parsed.fullScreenEnabled === undefined) parsed.fullScreenEnabled = true;
 
     return parsed;
   } catch (error) {

@@ -11,10 +11,13 @@ import { getStoredPrayerTimes } from '../utils/storage';
 import { scheduleNotifications } from '../utils/notificationService';
 import { homeThemes, getHomeTheme, saveHomeTheme } from '../utils/settingsStorage';
 import { showOngoingNotification, hideOngoingNotification } from '../utils/ongoingNotification';
+import { registerPlugin } from '@capacitor/core';
 import {
   Bell, Moon, Volume2, Activity, RotateCcw,
-  ChevronDown, ChevronUp, Play, Square, Download, Check, Smartphone, Palette, Clock
+  ChevronDown, ChevronUp, Play, Square, Download, Check, Smartphone, Palette, Clock, Monitor
 } from 'lucide-react';
+
+const PrayerPlugin = registerPlugin('PrayerPlugin');
 
 const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
   const [settings, setSettings] = useState(getNotificationSettings());
@@ -46,6 +49,11 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
       } else {
         hideOngoingNotification();
       }
+    }
+
+    // Tam ekran bildirim ayarı değiştiyse Native tarafa bildir
+    if (key === 'fullScreenEnabled') {
+      PrayerPlugin.setFullScreenEnabled({ enabled: value });
     }
 
     refreshNotifications();
@@ -105,7 +113,8 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
     if (window.confirm('Ayarlar sıfırlansın mı?')) {
       const defaults = resetNotificationSettings();
       setSettings(defaults);
-      hideOngoingNotification(); // Sıfırlanınca bildirimi de kapat
+      hideOngoingNotification();
+      PrayerPlugin.setFullScreenEnabled({ enabled: true });
       refreshNotifications();
     }
   };
@@ -178,7 +187,7 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
           </div>
         </div>
 
-        {/* YENİ: Kalıcı Bildirim Ayarı */}
+        {/* Kalıcı Bildirim Ayarı */}
         <div style={styles.row}>
           <div style={styles.labelContainer}>
             <Clock size={20} />
@@ -188,6 +197,18 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
             </div>
           </div>
           <Toggle checked={settings.ongoingEnabled} onChange={(e) => handleSettingChange('ongoingEnabled', e.target.checked)} />
+        </div>
+
+        {/* Tam Ekran Bildirim Ayarı */}
+        <div style={styles.row}>
+          <div style={styles.labelContainer}>
+            <Monitor size={20} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={styles.label}>Tam Ekran Bildirim</span>
+              <span style={{ fontSize: '11px', color: darkMode ? '#9ca3af' : '#6b7280' }}>Ezan vaktinde ekranı açar (Kilit ekranı)</span>
+            </div>
+          </div>
+          <Toggle checked={settings.fullScreenEnabled} onChange={(e) => handleSettingChange('fullScreenEnabled', e.target.checked)} />
         </div>
 
         <div style={styles.row}>

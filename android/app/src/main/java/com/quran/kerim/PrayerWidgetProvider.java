@@ -48,7 +48,7 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
             try {
                 JSONObject timings = new JSONObject(prayerDataStr);
                 Calendar now = Calendar.getInstance();
-                int currentTotalSeconds = now.get(Calendar.HOUR_OF_DAY) * 3600 + now.get(Calendar.MINUTE) * 60 + now.get(Calendar.SECOND);
+                int currentTotalSec = now.get(Calendar.HOUR_OF_DAY) * 3600 + now.get(Calendar.MINUTE) * 60 + now.get(Calendar.SECOND);
 
                 String[] names = {"Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"};
                 String[] trNames = {"İmsak", "Güneş", "Öğle", "İkindi", "Akşam", "Yatsı"};
@@ -65,21 +65,19 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
                     if (timeStr == null || timeStr.isEmpty()) continue;
 
                     String[] parts = timeStr.split(":");
-                    int pTotalSeconds = Integer.parseInt(parts[0]) * 3600 + Integer.parseInt(parts[1]) * 60;
+                    int pTotalSeconds = Integer.parseInt(parts[0].trim()) * 3600 + Integer.parseInt(parts[1].trim()) * 60;
 
-                    if (currentTotalSeconds < pTotalSeconds) {
-                        int diffSeconds = pTotalSeconds - currentTotalSeconds;
+                    if (currentTotalSec < pTotalSeconds) {
+                        int diffSeconds = pTotalSeconds - currentTotalSec;
                         int h = diffSeconds / 3600;
                         int m = (diffSeconds % 3600) / 60;
                         int s = diffSeconds % 60;
 
                         views.setTextViewText(R.id.widget_next_prayer_name, trNames[i]);
                         views.setTextViewText(R.id.widget_remaining_time, String.format("%02d:%02d:%02d", h, m, s));
-                        views.setTextColor(timeResIds[i], Color.parseColor("#FBBF24")); // Vurgu
+                        views.setTextColor(timeResIds[i], Color.parseColor("#FBBF24")); 
 
-                        // Progress Bar Mantığı
-                        int totalDaySeconds = 24 * 3600;
-                        int progress = (int) ((1.0 - (double)diffSeconds / totalDaySeconds) * 100);
+                        int progress = (int) (((double)currentTotalSec / 86400.0) * 100);
                         views.setProgressBar(R.id.widget_progress, 100, progress, false);
 
                         found = true;
@@ -89,7 +87,19 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
 
                 if (!found) {
                     views.setTextViewText(R.id.widget_next_prayer_name, "Yarın İmsak");
-                    views.setTextViewText(R.id.widget_remaining_time, "--:--:--");
+                    try {
+                        String fajrTime = timings.optString("Fajr", "--:--");
+                        String[] parts = fajrTime.split(":");
+                        int fSec = Integer.parseInt(parts[0].trim()) * 3600 + Integer.parseInt(parts[1].trim()) * 60;
+                        int diffSeconds = (86400 - currentTotalSec) + fSec;
+                        int h = diffSeconds / 3600;
+                        int m = (diffSeconds % 3600) / 60;
+                        int s = diffSeconds % 60;
+                        views.setTextViewText(R.id.widget_remaining_time, String.format("%02d:%02d:%02d", h, m, s));
+                    } catch(Exception e) {
+                         views.setTextViewText(R.id.widget_remaining_time, "--:--:--");
+                    }
+                    views.setProgressBar(R.id.widget_progress, 100, 100, false);
                 }
 
             } catch (Exception e) {
