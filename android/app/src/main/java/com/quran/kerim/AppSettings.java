@@ -1,6 +1,6 @@
-
 package com.quran.kerim;
 
+import android.app.AlarmManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -24,11 +24,9 @@ public class AppSettings extends Plugin {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
                 if (pm != null && !pm.isIgnoringBatteryOptimizations(packageName)) {
-                    // Doğrudan izin isteme penceresini açar
                     intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
                     intent.setData(Uri.parse("package:" + packageName));
                 } else {
-                    // Genel listeyi açar
                     intent.setAction(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
                 }
             } else {
@@ -53,6 +51,53 @@ public class AppSettings extends Plugin {
             call.resolve();
         } catch (Exception e) {
             call.reject("Üstte gösterme ayarları açılamadı: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void openExactAlarmSettings(PluginCall call) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                AlarmManager am = (AlarmManager) getContext().getSystemService(Context.ALARM_SERVICE);
+                if (am != null && !am.canScheduleExactAlarms()) {
+                    Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                        Uri.parse("package:" + getContext().getPackageName()));
+                    getActivity().startActivity(intent);
+                }
+            }
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Alarm ayarları açılamadı: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void openNotificationSettings(PluginCall call) {
+        try {
+            Intent intent = new Intent();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
+            } else {
+                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+            }
+            getActivity().startActivity(intent);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Bildirim ayarları açılamadı: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:" + getContext().getPackageName()));
+            getActivity().startActivity(intent);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Uygulama ayarları açılamadı: " + e.getMessage());
         }
     }
 }

@@ -21,6 +21,8 @@ import ImportantDays from './components/ImportantDays.jsx';
 import FullScreenNotification from './components/FullScreenNotification.jsx';
 import SetupWizard from './components/SetupWizard.jsx';
 import { initNotificationService } from './utils/notificationService.js';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
 import { getPrayerTimesByCoordinates, getUserLocation, getCityFromCoordinates } from './utils/prayerTimesApi.js';
 import { getStoredPrayerTimes, storePrayerTimes } from './utils/storage.js';
 
@@ -53,10 +55,11 @@ const App = () => {
     stateRef.current = { viewHistory, selectedSurah, selectedJuz };
   }, [viewHistory, selectedSurah, selectedJuz]);
 
-  // Vakit Kontrol Timer
+  // Vakit Kontrol Timer + Bildirim Listener
   useEffect(() => {
     if (showSetup) return;
 
+    // 1) Timer bazlı kontrol (uygulama açıkken)
     const checkPrayerTime = () => {
       const stored = getStoredPrayerTimes();
       if (!stored || !stored.timings) return;
@@ -75,8 +78,41 @@ const App = () => {
         }
       }
     };
-    const interval = setInterval(checkPrayerTime, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(checkPrayerTime, 15000);
+
+    // 2) Bildirim tıklanınca da FullScreen göster
+    let listenerHandle = null;
+    if (Capacitor.isNativePlatform()) {
+      LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+        const extra = notification?.notification?.extra;
+        if (extra && extra.prayerName) {
+          const today = new Date().toDateString();
+          const lastShown = localStorage.getItem(`last_fs_notif_${extra.prayerName}`);
+          if (lastShown !== today) {
+            setFullScreenPrayer({ name: extra.prayerName, time: extra.prayerTime || '' });
+            localStorage.setItem(`last_fs_notif_${extra.prayerName}`, today);
+          }
+        }
+      }).then(h => { listenerHandle = h; });
+
+      // 3) Bildirim geldiğinde (uygulama ön plandayken)
+      LocalNotifications.addListener('localNotificationReceived', (notification) => {
+        const extra = notification?.extra;
+        if (extra && extra.prayerName) {
+          const today = new Date().toDateString();
+          const lastShown = localStorage.getItem(`last_fs_notif_${extra.prayerName}`);
+          if (lastShown !== today) {
+            setFullScreenPrayer({ name: extra.prayerName, time: extra.prayerTime || '' });
+            localStorage.setItem(`last_fs_notif_${extra.prayerName}`, today);
+          }
+        }
+      });
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (listenerHandle) listenerHandle.remove();
+    };
   }, [showSetup]);
 
   useEffect(() => {

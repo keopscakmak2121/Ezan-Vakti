@@ -283,6 +283,14 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
         </div>
       )}
 
+      {/* Kurulum Sihirbazı */}
+      <button onClick={() => {
+        localStorage.removeItem('setup_completed');
+        window.location.reload();
+      }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '14px', backgroundColor: darkMode ? '#065f46' : '#ecfdf5', border: `1px solid #059669`, borderRadius: '12px', color: '#059669', fontWeight: '600', marginBottom: '12px', fontSize: '15px' }}>
+        🛠️ Kurulum Sihirbazını Tekrar Çalıştır
+      </button>
+
       <button onClick={handleReset} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '14px', backgroundColor: 'transparent', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`, borderRadius: '12px', color: '#ef4444', fontWeight: '500', marginBottom: '30px' }}>
         <RotateCcw size={18} /> Ayarları Sıfırla
       </button>
