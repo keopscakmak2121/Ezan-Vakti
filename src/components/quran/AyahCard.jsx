@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import NoteModal from './NoteModal';
+import TafsirModal from './TafsirModal'; // Yeni eklendi
 import { hasNote } from '../../utils/ayahNotesStorage';
 
 const AyahCard = ({
@@ -12,12 +13,12 @@ const AyahCard = ({
   onPlayClick,
   onBookmarkToggle,
   onNoteChange,
-  theme // Yeni: Tema renkleri
+  theme // Tema renkleri
 }) => {
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showTafsirModal, setShowTafsirModal] = useState(false); // Yeni eklendi
   const [ayahHasNote, setAyahHasNote] = useState(hasNote(ayah.surahNumber || 1, ayah.number));
 
-  // Eğer tema verilmişse onu kullan, yoksa eski mantık devam
   const cardBg = theme ? theme.bg : (darkMode ? '#1f2937' : '#ffffff');
   const textColor = theme ? theme.text : (darkMode ? '#f3f4f6' : '#1f2937');
   const subTextColor = theme ? theme.sub : (darkMode ? '#cbd5e1' : '#475569');
@@ -26,6 +27,17 @@ const AyahCard = ({
   const handleNoteSave = () => {
     setAyahHasNote(true);
     onNoteChange && onNoteChange();
+  };
+
+  const buttonStyle = {
+    padding: '8px 12px',
+    borderRadius: '8px',
+    border: 'none',
+    backgroundColor: (settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#f3f4f6'),
+    color: textColor,
+    fontSize: '16px',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
   };
 
   return (
@@ -96,20 +108,22 @@ const AyahCard = ({
           marginTop: '12px',
           flexWrap: 'wrap'
         }}>
+          {/* TEFSİR BUTONU - YENİ */}
+          <button
+            onClick={() => setShowTafsirModal(true)}
+            title="Tefsir Oku"
+            style={buttonStyle}
+          >
+            📚
+          </button>
+
           {/* Not */}
           <button
             onClick={() => setShowNoteModal(true)}
             style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: ayahHasNote
-                ? '#f59e0b'
-                : (settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#f3f4f6'),
-              color: ayahHasNote ? 'white' : textColor,
-              fontSize: '16px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
+              ...buttonStyle,
+              backgroundColor: ayahHasNote ? '#f59e0b' : buttonStyle.backgroundColor,
+              color: ayahHasNote ? 'white' : textColor
             }}
           >
             {ayahHasNote ? '📄' : '📝'}
@@ -119,16 +133,9 @@ const AyahCard = ({
           <button
             onClick={onBookmarkToggle}
             style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: isBookmarked 
-                ? '#059669' 
-                : (settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#f3f4f6'),
-              color: isBookmarked ? 'white' : textColor,
-              fontSize: '16px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
+              ...buttonStyle,
+              backgroundColor: isBookmarked ? '#059669' : buttonStyle.backgroundColor,
+              color: isBookmarked ? 'white' : textColor
             }}
           >
             {isBookmarked ? '🔖' : '📌'}
@@ -138,14 +145,9 @@ const AyahCard = ({
           <button
             onClick={onPlayClick}
             style={{
-              padding: '8px 14px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: isPlaying ? '#059669' : (settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#f3f4f6'),
-              color: isPlaying ? 'white' : textColor,
-              fontSize: '16px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
+              ...buttonStyle,
+              backgroundColor: isPlaying ? '#059669' : buttonStyle.backgroundColor,
+              color: isPlaying ? 'white' : textColor
             }}
           >
             {isPlaying ? '⏸️' : '▶️'}
@@ -161,6 +163,15 @@ const AyahCard = ({
           darkMode={settings.readerTheme === 'dark' || settings.readerTheme === 'black'}
           onClose={() => setShowNoteModal(false)}
           onSave={handleNoteSave}
+        />
+      )}
+
+      {showTafsirModal && (
+        <TafsirModal
+          surahNumber={ayah.surahNumber || 1}
+          ayahNumber={ayah.number}
+          darkMode={settings.readerTheme === 'dark' || settings.readerTheme === 'black'}
+          onClose={() => setShowTafsirModal(false)}
         />
       )}
     </>
