@@ -1,3 +1,4 @@
+
 package com.quran.kerim;
 
 import android.os.Build;
@@ -8,10 +9,11 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        // Eklentiyi kaydet
+        // Kayıt edilecek eklentiler:
         registerPlugin(AppSettings.class);
+        registerPlugin(PrayerPlugin.class); // Yeni eklentimizi ekledik
+        
+        super.onCreate(savedInstanceState);
 
         // Kilit ekranında göster + ekranı aç
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {

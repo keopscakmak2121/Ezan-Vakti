@@ -10,9 +10,10 @@ import {
 import { getStoredPrayerTimes } from '../utils/storage';
 import { scheduleNotifications } from '../utils/notificationService';
 import { homeThemes, getHomeTheme, saveHomeTheme } from '../utils/settingsStorage';
+import { showOngoingNotification, hideOngoingNotification } from '../utils/ongoingNotification';
 import {
   Bell, Moon, Volume2, Activity, RotateCcw,
-  ChevronDown, ChevronUp, Play, Square, Download, Check, Smartphone, Palette
+  ChevronDown, ChevronUp, Play, Square, Download, Check, Smartphone, Palette, Clock
 } from 'lucide-react';
 
 const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
@@ -36,6 +37,17 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     saveNotificationSettings(newSettings);
+
+    // Eğer kalıcı bildirim ayarı değiştiyse aksiyon al
+    if (key === 'ongoingEnabled') {
+      if (value) {
+        const stored = getStoredPrayerTimes();
+        if (stored) showOngoingNotification(stored.timings);
+      } else {
+        hideOngoingNotification();
+      }
+    }
+
     refreshNotifications();
   };
 
@@ -83,7 +95,6 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
     setDownloadingId(null);
     if (success) {
       alert('✅ Ses başarıyla indirildi!');
-      // State'i yeniden yükle — UI güncellenir
       setSettings({ ...getNotificationSettings() });
     } else {
       alert('❌ İndirme başarısız. İnternet bağlantınızı kontrol edin.');
@@ -94,6 +105,7 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
     if (window.confirm('Ayarlar sıfırlansın mı?')) {
       const defaults = resetNotificationSettings();
       setSettings(defaults);
+      hideOngoingNotification(); // Sıfırlanınca bildirimi de kapat
       refreshNotifications();
     }
   };
@@ -133,7 +145,6 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
           <Toggle checked={darkMode} onChange={toggleDarkMode} />
         </div>
 
-        {/* Ana Sayfa Tema Seçimi */}
         <div style={{ padding: '12px 0', borderBottom: `1px solid ${darkMode ? '#374151' : '#f3f4f6'}` }}>
           <div style={{ ...styles.labelContainer, marginBottom: '12px' }}>
             <Palette size={20} />
@@ -166,6 +177,19 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
             })}
           </div>
         </div>
+
+        {/* YENİ: Kalıcı Bildirim Ayarı */}
+        <div style={styles.row}>
+          <div style={styles.labelContainer}>
+            <Clock size={20} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={styles.label}>Kalıcı Bildirim</span>
+              <span style={{ fontSize: '11px', color: darkMode ? '#9ca3af' : '#6b7280' }}>Bildirim panelinde vakitleri gösterir</span>
+            </div>
+          </div>
+          <Toggle checked={settings.ongoingEnabled} onChange={(e) => handleSettingChange('ongoingEnabled', e.target.checked)} />
+        </div>
+
         <div style={styles.row}>
           <div style={styles.labelContainer}><Smartphone size={20} /><span style={styles.label}>Genel Titreşim</span></div>
           <Toggle checked={settings.vibration} onChange={(e) => handleSettingChange('vibration', e.target.checked)} />
@@ -222,7 +246,6 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
                         const newSoundId = e.target.value;
                         const allSounds = [...SOUND_OPTIONS.adhan, ...SOUND_OPTIONS.notification];
                         const selectedSound = allSounds.find(s => s.id === newSoundId);
-                        // İndirilmemiş ses seçildiyse uyar
                         if (selectedSound && !selectedSound.local && !isSoundDownloaded(newSoundId) && newSoundId !== 'default') {
                           handlePrayerSettingChange(key, 'soundId', newSoundId);
                           alert('Bu ses henüz indirilmedi. Aşağıdaki İndir butonuna basarak sesi indirin.');
@@ -242,19 +265,16 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
                         </optgroup>
                       </select>
 
-                      {/* Dinle butonu */}
                       <button onClick={() => handlePreviewSound(soundId, soundType)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: playingSound === soundId ? '#dc2626' : '#059669', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', marginBottom: '8px', boxSizing: 'border-box', cursor: 'pointer' }}>
                         {playingSound === soundId ? <><Square size={16} fill="white" /> Durdur</> : <><Play size={16} fill="white" /> Dinle</>}
                       </button>
 
-                      {/* İndir butonu — sadece indirilebilir ve henüz indirilmemiş sesler */}
                       {!isDownloaded && soundId !== 'default' && (
                         <button onClick={() => handleDownload(soundId, soundType)} disabled={downloadingId === soundId} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: downloadingId === soundId ? '#6b7280' : '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', boxSizing: 'border-box', cursor: downloadingId === soundId ? 'wait' : 'pointer' }}>
                           {downloadingId === soundId ? '⏳ İndiriliyor...' : <><Download size={16} /> İndir</>}
                         </button>
                       )}
 
-                      {/* İndirildi göstergesi — indirilebilir ve indirilmiş sesler */}
                       {isDownloaded && soundId !== 'default' && (() => {
                         const allSounds = [...SOUND_OPTIONS.adhan, ...SOUND_OPTIONS.notification];
                         const s = allSounds.find(x => x.id === soundId);
@@ -283,7 +303,6 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
         </div>
       )}
 
-      {/* Kurulum Sihirbazı */}
       <button onClick={() => {
         localStorage.removeItem('setup_completed');
         window.location.reload();

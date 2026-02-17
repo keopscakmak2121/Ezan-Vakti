@@ -22,13 +22,9 @@ public class AppSettings extends Plugin {
             String packageName = getContext().getPackageName();
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
-                if (pm != null && !pm.isIgnoringBatteryOptimizations(packageName)) {
-                    intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                    intent.setData(Uri.parse("package:" + packageName));
-                } else {
-                    intent.setAction(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
-                }
+                // Her zaman doğrudan uygulama için izin penceresi aç
+                intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + packageName));
             } else {
                 intent.setAction(Settings.ACTION_SETTINGS);
             }
@@ -36,7 +32,14 @@ public class AppSettings extends Plugin {
             getActivity().startActivity(intent);
             call.resolve();
         } catch (Exception e) {
-            call.reject("Pil ayarları açılamadı: " + e.getMessage());
+            // Bazı cihazlarda doğrudan istek desteklenmez, genel sayfayı aç
+            try {
+                Intent fallback = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                getActivity().startActivity(fallback);
+                call.resolve();
+            } catch (Exception e2) {
+                call.reject("Pil ayarları açılamadı: " + e2.getMessage());
+            }
         }
     }
 

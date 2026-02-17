@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <!-- Üst Kısım: Sıradaki Vakit ve Kalan Süre -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/widget_next_prayer_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sıradaki Vakit"
+                android:textColor="#E0E0E0"
+                android:textSize="11sp" />
+            <TextView
+                android:id="@+id/widget_next_prayer_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="İkindi"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_remaining_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="01:20:45"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-condensed" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/widget_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_marginBottom="12dp"
+        android:progressDrawable="@drawable/widget_progress_drawable" />
+
+    <!-- Alt Kısım: Tüm Vakitlerin Listesi -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="6">
+
+        <!-- İmsak -->
+        <LinearLayout android:id="@+id/item_fajr" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="İms" android:textColor="#E0E0E0" android:textSize="9sp" />
+            <TextView android:id="@+id/time_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:30" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Güneş -->
+        <LinearLayout android:id="@+id/item_sunrise" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gün" android:textColor="#E0E0E0" android:textSize="9sp" />
+            <TextView android:id="@+id/time_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="07:05" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Öğle -->
+        <LinearLayout android:id="@+id/item_dhuhr" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Öğl" android:textColor="#E0E0E0" android:textSize="9sp" />
+            <TextView android:id="@+id/time_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="13:10" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- İkindi -->
+        <LinearLayout android:id="@+id/item_asr" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="İkn" android:textColor="#E0E0E0" android:textSize="9sp" />
+            <TextView android:id="@+id/time_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="15:45" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Akşam -->
+        <LinearLayout android:id="@+id/item_maghrib" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Akş" android:textColor="#E0E0E0" android:textSize="9sp" />
+            <TextView android:id="@+id/time_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="18:30" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Yatsı -->
+        <LinearLayout android:id="@+id/item_isha" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Yat" android:textColor="#E0E0E0" android:textSize="9sp" />
+            <TextView android:id="@+id/time_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="20:05" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

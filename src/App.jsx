@@ -25,6 +25,8 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { getPrayerTimesByCoordinates, getUserLocation, getCityFromCoordinates } from './utils/prayerTimesApi.js';
 import { getStoredPrayerTimes, storePrayerTimes } from './utils/storage.js';
+import { getNotificationSettings } from './utils/notificationStorage.js';
+import { showOngoingNotification } from './utils/ongoingNotification.js';
 
 import { getHomeThemeColors } from './utils/settingsStorage.js';
 
@@ -37,7 +39,6 @@ const App = () => {
     return saved ? JSON.parse(saved) : false;
   });
 
-  // Kurulum Sihirbazı State
   const [showSetup, setShowSetup] = useState(() => {
     return localStorage.getItem('setup_completed') !== 'true';
   });
@@ -55,17 +56,47 @@ const App = () => {
     stateRef.current = { viewHistory, selectedSurah, selectedJuz };
   }, [viewHistory, selectedSurah, selectedJuz]);
 
-  // Vakit Kontrol Timer + Bildirim Listener
+  // VAKİT KONTROL VE BİLDİRİM DİNLEYİCİLERİ
   useEffect(() => {
     if (showSetup) return;
 
-    // 1) Timer bazlı kontrol (uygulama açıkken)
+    // 1) Bildirim Geldiğinde (Uygulama ön planda veya arka planda ama tetiklendiğinde)
+    let listenerReceived = null;
+    let listenerAction = null;
+
+    if (Capacitor.isNativePlatform()) {
+      // Bildirim geldiği an (Kilit ekranında veya açıkken)
+      LocalNotifications.addListener('localNotificationReceived', (notification) => {
+        const extra = notification?.extra;
+        if (extra && extra.prayerName) {
+          // Namaz vakti bildirimi ise tam ekranı tetikle
+          setFullScreenPrayer({
+            name: extra.prayerName,
+            time: extra.prayerTime || ''
+          });
+        }
+      }).then(h => { listenerReceived = h; });
+
+      // Bildirime tıklandığında
+      LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+        const extra = notification?.notification?.extra;
+        if (extra && extra.prayerName) {
+          setFullScreenPrayer({
+            name: extra.prayerName,
+            time: extra.prayerTime || ''
+          });
+        }
+      }).then(h => { listenerAction = h; });
+    }
+
+    // 2) Saniye bazlı kontrol (Fallback - Eğer bildirim bir şekilde tetiklenmezse)
     const checkPrayerTime = () => {
       const stored = getStoredPrayerTimes();
       if (!stored || !stored.timings) return;
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       const prayerNames = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
       for (const name of prayerNames) {
         if (stored.timings[name] === currentTime) {
           const today = now.toDateString();
@@ -78,40 +109,12 @@ const App = () => {
         }
       }
     };
-    const interval = setInterval(checkPrayerTime, 15000);
-
-    // 2) Bildirim tıklanınca da FullScreen göster
-    let listenerHandle = null;
-    if (Capacitor.isNativePlatform()) {
-      LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
-        const extra = notification?.notification?.extra;
-        if (extra && extra.prayerName) {
-          const today = new Date().toDateString();
-          const lastShown = localStorage.getItem(`last_fs_notif_${extra.prayerName}`);
-          if (lastShown !== today) {
-            setFullScreenPrayer({ name: extra.prayerName, time: extra.prayerTime || '' });
-            localStorage.setItem(`last_fs_notif_${extra.prayerName}`, today);
-          }
-        }
-      }).then(h => { listenerHandle = h; });
-
-      // 3) Bildirim geldiğinde (uygulama ön plandayken)
-      LocalNotifications.addListener('localNotificationReceived', (notification) => {
-        const extra = notification?.extra;
-        if (extra && extra.prayerName) {
-          const today = new Date().toDateString();
-          const lastShown = localStorage.getItem(`last_fs_notif_${extra.prayerName}`);
-          if (lastShown !== today) {
-            setFullScreenPrayer({ name: extra.prayerName, time: extra.prayerTime || '' });
-            localStorage.setItem(`last_fs_notif_${extra.prayerName}`, today);
-          }
-        }
-      });
-    }
+    const interval = setInterval(checkPrayerTime, 10000);
 
     return () => {
       clearInterval(interval);
-      if (listenerHandle) listenerHandle.remove();
+      if (listenerReceived) listenerReceived.remove();
+      if (listenerAction) listenerAction.remove();
     };
   }, [showSetup]);
 
@@ -157,9 +160,15 @@ const App = () => {
     const initApp = async () => {
       try {
         const stored = getStoredPrayerTimes();
+        const notificationSettings = getNotificationSettings();
+
         if (stored) {
+          if (notificationSettings.ongoingEnabled) {
+            showOngoingNotification(stored.timings);
+          }
           initNotificationService(stored.timings);
         }
+
         const coords = await getUserLocation();
         if (coords) {
           const res = await getPrayerTimesByCoordinates(coords.latitude, coords.longitude);
@@ -167,6 +176,9 @@ const App = () => {
             const cityName = await getCityFromCoordinates(coords.latitude, coords.longitude);
             storePrayerTimes(res.timings, cityName);
             initNotificationService(res.timings);
+            if (notificationSettings.ongoingEnabled) {
+              showOngoingNotification(res.timings);
+            }
           }
         }
       } catch (e) {
@@ -185,9 +197,7 @@ const App = () => {
   };
 
   const renderCurrentView = () => {
-    // SİHİRBAZ AÇIKKEN DİĞER HİÇBİR ŞEYİ RENDER ETME
     if (showSetup) return null;
-
     if (selectedJuz) return <JuzReader juzNumber={selectedJuz} darkMode={darkMode} onBack={() => setSelectedJuz(null)} />;
     if (selectedSurah) return <QuranReader surahNumber={selectedSurah?.number || selectedSurah} darkMode={darkMode} onBack={() => setSelectedSurah(null)} />;
 
@@ -219,7 +229,6 @@ const App = () => {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: themeColors.bg, userSelect: 'none', WebkitUserSelect: 'none', transition: 'background-color 0.3s' }}>
-
       {showSetup ? (
         <SetupWizard
           darkMode={darkMode}
@@ -236,17 +245,14 @@ const App = () => {
               onClose={() => setFullScreenPrayer(null)}
             />
           )}
-
           <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '70px' }}>
             {renderCurrentView()}
           </div>
-
           {toast.show && (
             <div style={{ position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'rgba(0,0,0,0.85)', color: '#fff', padding: '12px 24px', borderRadius: '25px', zIndex: 99999, fontSize: '14px' }}>
               {toast.message}
             </div>
           )}
-
           <TabBar darkMode={darkMode} onNavigate={handleNavigate} currentView={currentView} frequentItems={['quran', 'prayerTimes', 'qibla', 'esma']} menuItems={menuItems || []} />
         </>
       )}

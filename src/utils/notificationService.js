@@ -6,17 +6,8 @@ const PRAYER_IDS = { Fajr: 1001, Sunrise: 1002, Dhuhr: 1003, Asr: 1004, Maghrib:
 
 const isNative = () => Capacitor.isNativePlatform();
 
-// Kanal ID'sini ses ayarına göre oluştur — ses değiştiğinde yeni kanal lazım
 const getChannelId = (key, soundId) => `prayer-${key.toLowerCase()}-${soundId || 'default'}`;
 
-// Ses dosyasının res/raw'da olup olmadığını kontrol et
-const isLocalSound = (soundId) => {
-  const allSounds = [...SOUND_OPTIONS.adhan, ...SOUND_OPTIONS.notification];
-  const sound = allSounds.find(s => s.id === soundId);
-  return sound ? sound.local === true : false;
-};
-
-// Her vakit için özel bildirim kanalı oluştur
 export const createChannelsForPrayers = async () => {
   if (!isNative()) return;
   const settings = getNotificationSettings();
@@ -27,26 +18,26 @@ export const createChannelsForPrayers = async () => {
     const soundList = config.soundType === 'adhan' ? SOUND_OPTIONS.adhan : SOUND_OPTIONS.notification;
     const sound = soundList.find(s => s.id === soundId);
 
-    // Sadece lokal (res/raw/) sesler kanal'da kullanılabilir
-    // İndirilebilir sesler için fallback: ezan → adhan1, bildirim → notification1
     let soundName = undefined;
     if (settings.sound && config.enabled && sound && sound.file !== 'default') {
       if (sound.local) {
         soundName = sound.file.replace('.mp3', '');
       } else {
-        // İndirilebilir ses — res/raw'da yok, fallback kullan
         soundName = config.soundType === 'adhan' ? 'adhan1' : 'notification1';
       }
     }
 
     try {
+      // KRİTİK: Tam ekran için IMPORTANCE_HIGH (5) ve VISIBILITY_PUBLIC (1) şart
       await LocalNotifications.createChannel({
         id: channelId,
         name: `Namaz - ${key} (${sound?.name || 'Varsayılan'})`,
         importance: 5,
         sound: soundName,
         vibration: config.vibration !== false && settings.vibration,
-        visibility: 1
+        visibility: 1,
+        lights: true,
+        lightColor: '#059669'
       });
     } catch (e) {
       console.error(`Kanal hatası (${key}):`, e);
@@ -54,7 +45,6 @@ export const createChannelsForPrayers = async () => {
   }
 };
 
-// Bildirimleri planla
 export const scheduleNotifications = async (prayerTimings) => {
   if (!isNative() || !prayerTimings) return;
   const settings = getNotificationSettings();
@@ -93,11 +83,21 @@ export const scheduleNotifications = async (prayerTimings) => {
       id: PRAYER_IDS[key],
       title: `🕌 ${prayerNames[key]} Vakti`,
       body: createNotificationMessage(key, -(prayerConfig.minutesBefore || 0)),
-      schedule: { at: date, allowWhileIdle: true },
+      schedule: {
+        at: date,
+        allowWhileIdle: true,
+        repeats: false // Her gün tekrar yerine manuel planlama daha güvenli
+      },
       channelId: channelId,
-      sound: soundId !== 'default' ? `${soundId}.mp3` : undefined,
-      smallIcon: 'ic_stat_mosque',
-      extra: { prayerName: key, prayerTime: time }
+      // KRİTİK: Tam ekran tetikleyici
+      fullScreenIntent: true,
+      ongoing: true, // Kilit ekranında kalması için
+      autoCancel: false,
+      extra: {
+        prayerName: key,
+        prayerTime: time,
+        type: 'PRAYER_ALARM' // JS tarafında yakalamak için
+      }
     });
   }
 
@@ -105,14 +105,13 @@ export const scheduleNotifications = async (prayerTimings) => {
     await LocalNotifications.cancel({ notifications: Object.values(PRAYER_IDS).map(id => ({ id })) });
     if (notifications.length > 0) {
       await LocalNotifications.schedule({ notifications });
-      console.log(`✅ ${notifications.length} bildirim planlandı`);
+      console.log(`✅ ${notifications.length} tam ekran bildirim planlandı`);
     }
   } catch (e) {
     console.error("Bildirim planlama hatası:", e);
   }
 };
 
-// Bildirim servisini başlat
 export const initNotificationService = async (prayerTimings) => {
   if (!isNative()) return;
   try {
@@ -122,34 +121,5 @@ export const initNotificationService = async (prayerTimings) => {
     }
   } catch (e) {
     console.error('Bildirim izni hatası:', e);
-  }
-};
-
-// Test bildirimi
-export const sendTestNotification = async () => {
-  if (!isNative()) {
-    alert('Test bildirimi sadece telefonda çalışır.');
-    return;
-  }
-  try {
-    const settings = getNotificationSettings();
-    // İlk aktif vaktin ses ayarını kullan
-    const firstActive = Object.entries(settings.prayerNotifications).find(([, c]) => c.enabled);
-    const soundId = firstActive ? firstActive[1].soundId : 'default';
-    const channelId = firstActive ? getChannelId(firstActive[0], soundId) : 'prayer-test-default';
-
-    await LocalNotifications.schedule({
-      notifications: [{
-        id: 9999,
-        title: '🕌 Test Bildirimi',
-        body: 'Bildirimler düzgün çalışıyor! Ses ve titreşim test ediliyor.',
-        schedule: { at: new Date(Date.now() + 1000) },
-        channelId: channelId,
-        sound: soundId !== 'default' ? `${soundId}.mp3` : undefined,
-        smallIcon: 'ic_stat_mosque'
-      }]
-    });
-  } catch (e) {
-    console.error('Test bildirimi hatası:', e);
   }
 };

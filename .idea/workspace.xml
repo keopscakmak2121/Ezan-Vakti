@@ -4,7 +4,35 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b6ce7708-097c-4103-b282-8b57b8ef81e9" name="Changes" comment="" />
+    <list default="true" id="b6ce7708-097c-4103-b282-8b57b8ef81e9" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerForegroundService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerPlugin.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerWidgetProvider.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerWidgetSmallProvider.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/drawable/widget_bg.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/drawable/widget_progress_drawable.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/layout/prayer_widget.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/layout/prayer_widget_small.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/xml/prayer_widget_info.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/xml/prayer_widget_small_info.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/AppSettings.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/AppSettings.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/MainActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/MainActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/index-C-rioorx.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-BNOPZaWY.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-DD4ev4u9.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-DVF9HsO9.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-GWwUd-I_.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/dist/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Settings.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Settings.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/SetupWizard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/SetupWizard.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/notificationService.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/notificationService.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/notificationStorage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/notificationStorage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/ongoingNotification.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/ongoingNotification.js" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
