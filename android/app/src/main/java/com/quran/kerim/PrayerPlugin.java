@@ -17,12 +17,14 @@ public class PrayerPlugin extends Plugin {
     @PluginMethod
     public void start(PluginCall call) {
         JSObject prayerTimes = call.getObject("prayerTimes");
+        String locationName = call.getString("locationName", "Konum");
+        
         if (prayerTimes == null) {
             call.reject("Ezan vakitleri gönderilmedi.");
             return;
         }
 
-        saveToWidgetStorage(prayerTimes.toString());
+        saveToWidgetStorage(prayerTimes.toString(), locationName);
 
         Intent serviceIntent = new Intent(getContext(), PrayerForegroundService.class);
         serviceIntent.putExtra("prayerTimes", prayerTimes.toString());
@@ -33,9 +35,8 @@ public class PrayerPlugin extends Plugin {
             getContext().startService(serviceIntent);
         }
         
-        // Widget'ları tetikle
-        PrayerWidgetProvider.updateAllWidgets(getContext());
-        PrayerWidgetSmallProvider.updateAllWidgets(getContext());
+        // Tüm Widget'ları tetikle
+        updateAllWidgets();
         
         call.resolve();
     }
@@ -55,10 +56,19 @@ public class PrayerPlugin extends Plugin {
         call.resolve();
     }
 
-    private void saveToWidgetStorage(String prayerData) {
+    private void updateAllWidgets() {
+        Context context = getContext();
+        PrayerWidgetProvider.updateAllWidgets(context);
+        PrayerWidgetSmallProvider.updateAllWidgets(context);
+        PrayerWidgetStripProvider.updateAllWidgets(context);
+        PrayerWidgetVerticalProvider.updateAllWidgets(context);
+    }
+
+    private void saveToWidgetStorage(String prayerData, String locationName) {
         SharedPreferences prefs = getContext().getSharedPreferences("PrayerWidgetPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("prayer_data", prayerData);
+        editor.putString("location_name", locationName);
         editor.apply();
     }
 }

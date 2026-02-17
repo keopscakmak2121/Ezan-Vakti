@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getSettings, saveSettings, getReaderTheme } from '../../utils/settingsStorage.js';
 import { saveReadingProgress, getLastReadPosition, isBookmarked, addBookmark, removeBookmark } from '../../utils/readingProgressStorage.js';
 import { getAudio, downloadAudio, downloadSurah } from '../../utils/audioStorage.js';
+import { getSurahText, downloadSurahText } from '../../utils/quranStorage.js';
+import { startReadingSession, endReadingSession, incrementAyahRead } from '../../utils/statsStorage.js';
 import AyahCard from './AyahCard';
 import QuranSettings from './QuranSettings'; 
 import SurahHeader from './SurahHeader'; 
@@ -35,13 +37,22 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
     }
 
     return () => {
-      // Bileşen kapandığında ekranı normale döndür
       AppSettings.setKeepScreenOn({ keepOn: false });
     };
   }, [settings.keepScreenOn]);
 
+  // İstatistik Oturumu Yönetimi
   useEffect(() => {
-    fetchSurah(settings.translation);
+    if (surahData) {
+      startReadingSession(surahNumber, surahData.turkishName);
+    }
+    return () => {
+      endReadingSession();
+    };
+  }, [surahNumber, surahData]);
+
+  useEffect(() => {
+    loadSurah(settings.translation);
     const lastRead = getLastReadPosition();
     if (lastRead && lastRead.surahNumber === surahNumber) {
       setLastReadAyah(lastRead.ayahNumber);
@@ -50,39 +61,69 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
     return () => { if (audioRef.current) audioRef.current.pause(); };
   }, [surahNumber]);
 
-  const fetchSurah = async (translationId) => {
+  const loadSurah = async (translationId) => {
     try {
       setLoading(true);
-      const editions = `quran-simple,${translationId}`;
-      const [surahInfoRes, contentRes] = await Promise.all([
-        fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`),
-        fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/editions/${editions}`)
-      ]);
-      const surahInfoData = await surahInfoRes.json();
-      const contentData = await contentRes.json();
-      if (contentData.code === 200) {
+      const localData = await getSurahText(surahNumber);
+
+      if (localData) {
+        setAllVerses(localData.arabic.map((ayah, index) => ({
+          number: ayah.numberInSurah,
+          arabic: ayah.text,
+          turkish: localData.translation[index].text,
+          globalNumber: ayah.number
+        })));
+
+        const surahInfoRes = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`);
+        const surahInfoData = await surahInfoRes.json();
         const data = surahInfoData.data;
         setSurahData({
           ...data,
           turkishName: data.englishName,
           ayahsCount: data.numberOfAyahs
         });
+      } else {
+        const editions = `quran-simple,${translationId}`;
+        const [surahInfoRes, contentRes] = await Promise.all([
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/editions/${editions}`)
+        ]);
 
-        const combined = contentData.data[0].ayahs.map((ayah, index) => ({
-          number: ayah.numberInSurah,
-          arabic: ayah.text,
-          turkish: contentData.data[1].ayahs[index].text,
-          globalNumber: ayah.number
-        }));
-        setAllVerses(combined);
+        const surahInfoData = await surahInfoRes.json();
+        const contentData = await contentRes.json();
+
+        if (contentData.code === 200) {
+          const data = surahInfoData.data;
+          setSurahData({
+            ...data,
+            turkishName: data.englishName,
+            ayahsCount: data.numberOfAyahs
+          });
+
+          const combined = contentData.data[0].ayahs.map((ayah, index) => ({
+            number: ayah.numberInSurah,
+            arabic: ayah.text,
+            turkish: contentData.data[1].ayahs[index].text,
+            globalNumber: ayah.number
+          }));
+          setAllVerses(combined);
+          downloadSurahText(surahNumber, translationId);
+        }
       }
-    } catch (error) { console.error(error); } finally { setLoading(false); }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const scrollToAyah = (ayahNumber) => {
     const el = document.querySelector(`[data-ayah-number="${ayahNumber}"]`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Ayet okunduğunda istatistiği artır
+      incrementAyahRead();
+      saveReadingProgress(surahNumber, ayahNumber);
     }
   };
 
@@ -183,7 +224,7 @@ const QuranReader = ({ surahNumber, darkMode, onBack }) => {
   };
 
   if (showSettings) {
-    return <QuranSettings darkMode={darkMode} settings={settings} onSettingsChange={(s) => { setSettings(s); saveSettings(s); if(s.translation !== settings.translation) fetchSurah(s.translation); }} onBack={() => setShowSettings(false)} />;
+    return <QuranSettings darkMode={darkMode} settings={settings} onSettingsChange={(s) => { setSettings(s); saveSettings(s); if(s.translation !== settings.translation) loadSurah(s.translation); }} onBack={() => setShowSettings(false)} />;
   }
 
   const continueFromLastRead = () => {

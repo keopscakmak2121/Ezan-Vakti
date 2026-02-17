@@ -23,11 +23,9 @@ const initDB = () => {
 
 const makeKey = (reciter, surahNumber, ayahNumber) => `${reciter}:${surahNumber}-${ayahNumber}`;
 
-// Ses dosyasını indir ve kaydet
 export const downloadAudio = async (surahNumber, ayahNumber, onProgress, reciter = 'Alafasy_128kbps') => {
   try {
     const url = `https://everyayah.com/data/${reciter}/${String(surahNumber).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`;
-    
     const response = await fetch(url);
     if (!response.ok) throw new Error('İndirme başarısız');
 
@@ -72,7 +70,6 @@ export const downloadAudio = async (surahNumber, ayahNumber, onProgress, reciter
   }
 };
 
-// Tüm sure seslerini indir
 export const downloadSurah = async (surahNumber, totalAyahs, onProgress, reciter = 'Alafasy_128kbps') => {
   const results = [];
   for (let i = 1; i <= totalAyahs; i++) {
@@ -89,7 +86,6 @@ export const downloadSurah = async (surahNumber, totalAyahs, onProgress, reciter
   return results;
 };
 
-// Ses dosyasını getir (kari bazlı)
 export const getAudio = async (surahNumber, ayahNumber, reciter) => {
   if (!reciter) return null;
   try {
@@ -113,31 +109,34 @@ export const getAudio = async (surahNumber, ayahNumber, reciter) => {
   }
 };
 
-// Sure indirilmiş mi kontrol et (kari bazlı)
-export const isSurahDownloaded = async (surahNumber, totalAyahs, reciter) => {
-  if (!reciter) return false;
+// Belirli bir hafız için indirilenleri getir
+export const getDownloadedSurahs = async (currentReciter) => {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], 'readonly');
     const store = transaction.objectStore(STORE_NAME);
 
-    let count = 0;
-    for (let i = 1; i <= totalAyahs; i++) {
-      const exists = await new Promise((resolve) => {
-        const req = store.get(makeKey(reciter, surahNumber, i));
-        req.onsuccess = () => resolve(!!req.result);
-        req.onerror = () => resolve(false);
-      });
-      if (exists) count++;
-    }
-    return count === totalAyahs;
+    return new Promise((resolve) => {
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const surahMap = {};
+        request.result.forEach(audio => {
+          // Sadece seçili hafızın dosyalarını say
+          if (!currentReciter || audio.reciter === currentReciter) {
+            if (!surahMap[audio.surahNumber]) surahMap[audio.surahNumber] = [];
+            surahMap[audio.surahNumber].push(audio.ayahNumber);
+          }
+        });
+        resolve(surahMap);
+      };
+      request.onerror = () => resolve({});
+    });
   } catch (error) {
-    return false;
+    return {};
   }
 };
 
-// Sure seslerini sil (tüm kariler dahil)
-export const deleteSurah = async (surahNumber) => {
+export const deleteSurah = async (surahNumber, reciter) => {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], 'readwrite');
@@ -147,7 +146,7 @@ export const deleteSurah = async (surahNumber) => {
     await new Promise((resolve) => {
       allRequest.onsuccess = () => {
         allRequest.result
-          .filter(a => a.surahNumber === surahNumber)
+          .filter(a => a.surahNumber === surahNumber && (!reciter || a.reciter === reciter))
           .forEach(a => store.delete(a.id));
         resolve();
       };
@@ -163,31 +162,6 @@ export const deleteSurah = async (surahNumber) => {
   }
 };
 
-// İndirilen sureleri listele
-export const getDownloadedSurahs = async () => {
-  try {
-    const db = await initDB();
-    const transaction = db.transaction([STORE_NAME], 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-
-    return new Promise((resolve) => {
-      const request = store.getAll();
-      request.onsuccess = () => {
-        const surahMap = {};
-        request.result.forEach(audio => {
-          if (!surahMap[audio.surahNumber]) surahMap[audio.surahNumber] = [];
-          surahMap[audio.surahNumber].push(audio.ayahNumber);
-        });
-        resolve(surahMap);
-      };
-      request.onerror = () => resolve({});
-    });
-  } catch (error) {
-    return {};
-  }
-};
-
-// Toplam kullanılan disk alanını hesapla
 export const getTotalSize = async () => {
   try {
     const db = await initDB();

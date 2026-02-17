@@ -3,11 +3,13 @@
     android:id="@+id/widget_small_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg"
+    android:background="@drawable/widget_glass_bg"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:padding="12dp">
+    android:padding="10dp"
+    android:baselineAligned="false">
 
+    <!-- İsim ve Vakit Kısmı (Sol) -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -15,29 +17,46 @@
         android:orientation="vertical">
         <TextView
             android:id="@+id/widget_small_prayer_name"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="İkindi"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:text="İKİNDİ"
+            android:textColor="#FBBF24"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:lines="1"
+            android:ellipsize="none"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="8sp"
+            android:autoSizeMaxTextSize="14sp" />
         <TextView
             android:id="@+id/widget_small_prayer_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="15:45"
-            android:textColor="#E0E0E0"
-            android:textSize="14sp" />
+            android:textColor="#B3FFFFFF"
+            android:textSize="11sp"
+            android:maxLines="1"
+            android:lines="1" />
     </LinearLayout>
 
+    <!-- Kalan Zaman (Sağ) -->
     <TextView
         android:id="@+id/widget_small_remaining_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="01:20:45"
+        android:layout_marginLeft="4dp"
+        android:gravity="right"
+        android:text="01:20"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:fontFamily="sans-serif-condensed" />
+        android:fontFamily="sans-serif-medium"
+        android:maxLines="1"
+        android:lines="1"
+        android:ellipsize="none"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="10sp"
+        android:autoSizeMaxTextSize="18sp" />
 
 </LinearLayout>

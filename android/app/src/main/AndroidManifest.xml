@@ -26,14 +26,13 @@
 
         </activity>
 
-        <!-- Kalıcı Bildirim Servisi -->
         <service
             android:name=".PrayerForegroundService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse" />
 
-        <!-- Ezan Vakti Widget (Geniş) -->
+        <!-- Ezan Vakti Widget (Geniş Liste) -->
         <receiver android:name=".PrayerWidgetProvider"
             android:exported="false">
             <intent-filter>
@@ -43,7 +42,7 @@
                 android:resource="@xml/prayer_widget_info" />
         </receiver>
 
-        <!-- Ezan Vakti Widget (Kompakt) -->
+        <!-- Ezan Vakti Widget (Kompakt Kare) -->
         <receiver android:name=".PrayerWidgetSmallProvider"
             android:exported="false">
             <intent-filter>
@@ -64,7 +63,6 @@
         </provider>
     </application>
 
-    <!-- Temel İzinler -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />

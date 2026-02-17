@@ -5,32 +5,36 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b6ce7708-097c-4103-b282-8b57b8ef81e9" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/drawable/ic_launcher_foreground.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/drawable/ic_mosque_foreground.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerWidgetStripProvider.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerWidgetVerticalProvider.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/drawable/widget_glass_bg.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/layout/prayer_widget_strip.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/layout/prayer_widget_vertical.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/xml/prayer_widget_strip_info.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/xml/prayer_widget_vertical_info.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/home/DailyPrayerCard.jsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/data/prayers.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/utils/quranStorage.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/capacitor.build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/capacitor.build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/AppSettings.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/AppSettings.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerForegroundService.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerForegroundService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerPlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerPlugin.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerWidgetProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerWidgetProvider.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerWidgetSmallProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerWidgetSmallProvider.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/res/values/ic_launcher_background.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/res/values/ic_launcher_background.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/res/values/strings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/res/values/strings.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/capacitor.settings.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/capacitor.settings.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/index-C_2QkqeP.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/index-T5k-hgvO.css" beforeDir="false" afterPath="$PROJECT_DIR$/dist/assets/index-T5k-hgvO.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-BCGgM1c5.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-C89vN9JE.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-DYnNDkfb.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-DZu1djUE.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/main/res/layout/prayer_widget.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/res/layout/prayer_widget.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/main/res/layout/prayer_widget_small.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/res/layout/prayer_widget_small.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/index-CyyVZsYu.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-CG-_-zDX.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-DHZFETYH.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-DbC8cSuM.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-_rD5qjrl.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/dist/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/Settings.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Settings.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Downloads.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Downloads.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/home/HomePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/home/HomePage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/quran/JuzReader.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/JuzReader.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/quran/QuranReader.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/QuranReader.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/quran/QuranSettings.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/QuranSettings.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/notificationStorage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/notificationStorage.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/settingsStorage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/settingsStorage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/audioStorage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/audioStorage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/ongoingNotification.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/ongoingNotification.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

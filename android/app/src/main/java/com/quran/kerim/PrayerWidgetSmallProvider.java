@@ -68,14 +68,13 @@ public class PrayerWidgetSmallProvider extends AppWidgetProvider {
                         
                         views.setTextViewText(R.id.widget_small_prayer_name, trNames[i]);
                         views.setTextViewText(R.id.widget_small_prayer_time, timeStr);
-                        views.setTextViewText(R.id.widget_small_remaining_time, String.format("-%02d:%02d", h, m));
+                        views.setTextViewText(R.id.widget_small_remaining_time, String.format("%02d:%02d", h, m));
                         found = true;
                         break;
                     }
                 }
                 
                 if (!found) {
-                    // Yatsıdan sonra Yarın İmsak'a kadar olan süreyi hesapla
                     String fajrTime = timings.optString("Fajr", "--:--");
                     views.setTextViewText(R.id.widget_small_prayer_name, "Yarın İmsak");
                     views.setTextViewText(R.id.widget_small_prayer_time, fajrTime);
@@ -86,7 +85,7 @@ public class PrayerWidgetSmallProvider extends AppWidgetProvider {
                         int diffSeconds = (86400 - currentTotalSec) + fSec;
                         int h = diffSeconds / 3600;
                         int m = (diffSeconds % 3600) / 60;
-                        views.setTextViewText(R.id.widget_small_remaining_time, String.format("-%02d:%02d", h, m));
+                        views.setTextViewText(R.id.widget_small_remaining_time, String.format("%02d:%02d", h, m));
                     } catch (Exception e) {
                         views.setTextViewText(R.id.widget_small_remaining_time, "--:--");
                     }

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { juzData } from '../../data/juz-data.js';
 import { getSettings, getReaderTheme } from '../../utils/settingsStorage.js';
+import { getSurahText, downloadSurahText } from '../../utils/quranStorage.js';
+import { startReadingSession, endReadingSession, incrementAyahRead } from '../../utils/statsStorage.js';
 import SurahHeader from './SurahHeader';
 
 const LAST_JUZ_KEY = 'quran_juz_last_read';
@@ -34,7 +36,15 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
   const theme = getReaderTheme(settings.readerTheme);
   const isDark = settings.readerTheme === 'dark' || settings.readerTheme === 'black';
 
-  // Yer imi kontrol
+  // İstatistik Oturumu Yönetimi (Cüz için)
+  useEffect(() => {
+    // Cüz başladığında oturum başlat (Cüz numarasıyla)
+    startReadingSession(`Juz-${juzNumber}`, `Cüz ${juzNumber}`);
+    return () => {
+      endReadingSession();
+    };
+  }, [juzNumber]);
+
   useEffect(() => {
     const bm = getJuzBookmark();
     if (bm && bm.juzNumber === juzNumber) {
@@ -51,28 +61,50 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
   }, [juzNumber]);
 
   useEffect(() => {
-    if (currentSurahNum && !surahs[currentSurahNum]) fetchSurah(currentSurahNum);
+    if (currentSurahNum && !surahs[currentSurahNum]) loadSurahData(currentSurahNum);
   }, [currentSurahNum]);
 
-  const fetchSurah = async (surahNum) => {
+  const loadSurahData = async (surahNum) => {
     try {
-      const [surahInfoRes, contentRes] = await Promise.all([
-        fetch(`https://api.alquran.cloud/v1/surah/${surahNum}`),
-        fetch(`https://api.quran.com/api/v4/quran/verses/uthmani_tajweed?chapter_number=${surahNum}`)
-      ]);
-      const surahInfoData = await surahInfoRes.json();
-      const contentData = await contentRes.json();
+      const localData = await getSurahText(surahNum);
 
-      if (surahInfoData.code === 200) setSurahs(prev => ({ ...prev, [surahNum]: surahInfoData.data }));
-      if (contentData.verses) {
-        const ayahsWithContext = contentData.verses.map(v => ({
+      if (localData && localData.tajweed) {
+        const surahInfoRes = await fetch(`https://api.alquran.cloud/v1/surah/${surahNum}`);
+        const surahInfoData = await surahInfoRes.json();
+
+        if (surahInfoData.code === 200) {
+          setSurahs(prev => ({ ...prev, [surahNum]: surahInfoData.data }));
+        }
+
+        const ayahsWithContext = localData.tajweed.map(v => ({
           ...v,
           verse_number: v.verse_number || (v.verse_key ? parseInt(v.verse_key.split(':')[1]) : 0),
           surah: { number: surahNum }
         }));
+
         setVerses(prev => [...prev, ...ayahsWithContext]);
+      } else {
+        const [surahInfoRes, contentRes] = await Promise.all([
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}`),
+          fetch(`https://api.quran.com/api/v4/quran/verses/uthmani_tajweed?chapter_number=${surahNum}`)
+        ]);
+        const surahInfoData = await surahInfoRes.json();
+        const contentData = await contentRes.json();
+
+        if (surahInfoData.code === 200) setSurahs(prev => ({ ...prev, [surahNum]: surahInfoData.data }));
+        if (contentData.verses) {
+          const ayahsWithContext = contentData.verses.map(v => ({
+            ...v,
+            verse_number: v.verse_number || (v.verse_key ? parseInt(v.verse_key.split(':')[1]) : 0),
+            surah: { number: surahNum }
+          }));
+          setVerses(prev => [...prev, ...ayahsWithContext]);
+          downloadSurahText(surahNum, settings.translation);
+        }
       }
-    } catch (error) { console.error(`Error fetching surah ${surahNum}:`, error); }
+    } catch (error) {
+      console.error(`Error loading surah ${surahNum}:`, error);
+    }
   };
 
   const lastAyahElementRef = useCallback(node => {
@@ -100,6 +132,9 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
     saveJuzBookmark(juzNumber, surahNum, ayahNum, surahName);
     setBookmarkedVerse({ surah: surahNum, ayah: ayahNum });
     showToast(`📌 ${surahName} ${ayahNum}. ayet kaydedildi`);
+
+    // Ayet tıklandığında/kaydedildiğinde de istatistik sayılabilir
+    incrementAyahRead();
   };
 
   const scrollToAyah = (surahNum, ayahNum) => {
@@ -108,6 +143,9 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.style.backgroundColor = isDark ? '#065f4640' : '#d1fae580';
       setTimeout(() => { el.style.backgroundColor = 'transparent'; }, 2500);
+
+      // Kaydırıldığında ayet okundu sayalım
+      incrementAyahRead();
     }
   };
 
@@ -130,8 +168,6 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
 
   return (
     <div style={{ backgroundColor: theme.bg, minHeight: '100vh', transition: 'background-color 0.3s' }}>
-
-      {/* === HEADER === */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         position: 'sticky', top: 0, zIndex: 10,
@@ -140,10 +176,9 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
       }}>
         <button onClick={onBack} style={{ border: 'none', background: 'transparent', color: theme.text, fontSize: '24px', padding: '8px' }}>←</button>
         <h2 style={{ color: theme.text, margin: 0, fontSize: '18px' }}>Cüz {juzNumber}</h2>
-        <div style={{ width: '40px' }}></div> {/* Denge için boşluk */}
+        <div style={{ width: '40px' }}></div>
       </div>
 
-      {/* === DEVAM ET === */}
       {showResumePrompt && savedBookmark && (
         <div style={{
           margin: '8px 12px', padding: '12px 16px', borderRadius: '12px',
@@ -178,7 +213,6 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
         </div>
       )}
 
-      {/* === AYETLER === */}
       <div style={{ padding: '5px' }}>
         {Object.keys(surahsToRender).map((surahNum, index) => {
           const surahInfo = surahs[surahNum];
@@ -227,7 +261,6 @@ const JuzReader = ({ juzNumber, darkMode, onBack }) => {
         })}
       </div>
 
-      {/* === TOAST === */}
       {toastMsg && (
         <div style={{
           position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)',

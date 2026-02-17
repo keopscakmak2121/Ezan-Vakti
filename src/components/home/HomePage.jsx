@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import NextPrayerCard from './NextPrayerCard.jsx';
 import PrayerTimeCards from './PrayerTimeCards.jsx';
 import TabPanel from './TabPanel.jsx';
+import DailyPrayerCard from './DailyPrayerCard.jsx';
 import PrayerAlertOverlay from './PrayerAlertOverlay.jsx';
 import { getPrayerTimesByCoordinates, getUserLocation, getNextPrayer, getCityFromCoordinates } from '../../utils/prayerTimesApi.js';
 import { getStoredPrayerTimes, storePrayerTimes } from '../../utils/storage.js';
@@ -57,12 +58,10 @@ const HomePage = ({ darkMode, onNavigate }) => {
         const newCountdown = calculateCountdown(nextPrayer.time, nextPrayer.tomorrow);
         setCountdown(newCountdown);
 
-        // Vakit geçtiğinde tam ekran bildirim göster
         if (newCountdown === '00:00:00' && prayerTimes) {
           const alertKey = `${nextPrayer.name}-${nextPrayer.time}`;
           if (lastAlertedPrayer.current !== alertKey) {
             lastAlertedPrayer.current = alertKey;
-            // Güneş vakti için alert gösterme (namaz değil)
             if (nextPrayer.name !== 'Güneş') {
               setAlertData({ name: nextPrayer.name, time: nextPrayer.time });
             }
@@ -115,7 +114,6 @@ const HomePage = ({ darkMode, onNavigate }) => {
 
   return (
     <div style={{padding: '10px'}}>
-      {/* Tam ekran vakit bildirimi */}
       {alertData && (
         <PrayerAlertOverlay
           prayerName={alertData.name}
@@ -128,6 +126,10 @@ const HomePage = ({ darkMode, onNavigate }) => {
       <NextPrayerCard nextPrayer={nextPrayer} countdown={countdown} darkMode={darkMode} locationName={locationName} />
       <PrayerTimeCards prayerTimes={prayerTimes} darkMode={darkMode} themeColors={getHomeThemeColors(darkMode)} />
       <TabPanel darkMode={darkMode} />
+
+      {/* Günün Duası Kartı buraya eklendi */}
+      <DailyPrayerCard darkMode={darkMode} />
+
       {error && !prayerTimes && (
         <div style={{textAlign: 'center', color: '#ef4444', padding: '10px', fontSize: '13px'}}>
           Vakitler güncellenemedi. Lütfen internetinizi kontrol edin.

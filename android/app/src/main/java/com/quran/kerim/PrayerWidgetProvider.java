@@ -71,10 +71,9 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
                         int diffSeconds = pTotalSeconds - currentTotalSec;
                         int h = diffSeconds / 3600;
                         int m = (diffSeconds % 3600) / 60;
-                        int s = diffSeconds % 60;
 
                         views.setTextViewText(R.id.widget_next_prayer_name, trNames[i]);
-                        views.setTextViewText(R.id.widget_remaining_time, String.format("%02d:%02d:%02d", h, m, s));
+                        views.setTextViewText(R.id.widget_remaining_time, String.format("%02d:%02d", h, m));
                         views.setTextColor(timeResIds[i], Color.parseColor("#FBBF24")); 
 
                         int progress = (int) (((double)currentTotalSec / 86400.0) * 100);
@@ -94,10 +93,9 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
                         int diffSeconds = (86400 - currentTotalSec) + fSec;
                         int h = diffSeconds / 3600;
                         int m = (diffSeconds % 3600) / 60;
-                        int s = diffSeconds % 60;
-                        views.setTextViewText(R.id.widget_remaining_time, String.format("%02d:%02d:%02d", h, m, s));
+                        views.setTextViewText(R.id.widget_remaining_time, String.format("%02d:%02d", h, m));
                     } catch(Exception e) {
-                         views.setTextViewText(R.id.widget_remaining_time, "--:--:--");
+                         views.setTextViewText(R.id.widget_remaining_time, "--:--");
                     }
                     views.setProgressBar(R.id.widget_progress, 100, 100, false);
                 }

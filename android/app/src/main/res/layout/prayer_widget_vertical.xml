@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_vertical_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_glass_bg"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:weightSum="1">
+
+    <!-- Üst Kısım: Tarih ve Şehir -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingBottom="6dp">
+        <TextView
+            android:id="@+id/widget_vertical_date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="17 Şubat 2026"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:lines="1"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="8sp"
+            android:autoSizeMaxTextSize="12sp" />
+        <TextView
+            android:id="@+id/widget_vertical_city"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="4dp"
+            android:text="İstanbul"
+            android:textColor="#B3FFFFFF"
+            android:textSize="10sp"
+            android:maxLines="1"
+            android:lines="1" />
+    </LinearLayout>
+
+    <!-- Vakitler Listesi -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
+
+        <!-- Her satır için auto-sizing ve maxLines uygulandı -->
+        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <TextView android:id="@+id/label_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="İmsak" android:textColor="#FFFFFF" android:textSize="12sp" android:layout_alignParentLeft="true" android:maxLines="1" />
+            <TextView android:id="@+id/time_fajr_vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:30" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold" android:layout_alignParentRight="true" android:maxLines="1" />
+        </RelativeLayout>
+
+        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <TextView android:id="@+id/label_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Güneş" android:textColor="#FFFFFF" android:textSize="12sp" android:layout_alignParentLeft="true" android:maxLines="1" />
+            <TextView android:id="@+id/time_sunrise_vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="07:05" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold" android:layout_alignParentRight="true" android:maxLines="1" />
+        </RelativeLayout>
+
+        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <TextView android:id="@+id/label_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Öğle" android:textColor="#FFFFFF" android:textSize="12sp" android:layout_alignParentLeft="true" android:maxLines="1" />
+            <TextView android:id="@+id/time_dhuhr_vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="13:10" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold" android:layout_alignParentRight="true" android:maxLines="1" />
+        </RelativeLayout>
+
+        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <TextView android:id="@+id/label_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="İkindi" android:textColor="#FFFFFF" android:textSize="12sp" android:layout_alignParentLeft="true" android:maxLines="1" />
+            <TextView android:id="@+id/time_asr_vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="15:45" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold" android:layout_alignParentRight="true" android:maxLines="1" />
+        </RelativeLayout>
+
+        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <TextView android:id="@+id/label_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Akşam" android:textColor="#FFFFFF" android:textSize="12sp" android:layout_alignParentLeft="true" android:maxLines="1" />
+            <TextView android:id="@+id/time_maghrib_vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="18:30" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold" android:layout_alignParentRight="true" android:maxLines="1" />
+        </RelativeLayout>
+
+        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <TextView android:id="@+id/label_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Yatsı" android:textColor="#FFFFFF" android:textSize="12sp" android:layout_alignParentLeft="true" android:maxLines="1" />
+            <TextView android:id="@+id/time_isha_vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="20:05" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold" android:layout_alignParentRight="true" android:maxLines="1" />
+        </RelativeLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -58,9 +58,11 @@ public class PrayerForegroundService extends Service {
                 updateNotification();
                 checkPrayerTime();
                 
-                // Widget'ları her dakika zorla güncelle
-                PrayerWidgetProvider.updateAllWidgets(getApplicationContext());
-                PrayerWidgetSmallProvider.updateAllWidgets(getApplicationContext());
+                // Aktif Widget'ları güncelle
+                Context context = getApplicationContext();
+                PrayerWidgetProvider.updateAllWidgets(context);
+                PrayerWidgetSmallProvider.updateAllWidgets(context);
+                PrayerWidgetStripProvider.updateAllWidgets(context);
                 
                 long now = System.currentTimeMillis();
                 long delay = 60000 - (now % 60000);
@@ -138,13 +140,12 @@ public class PrayerForegroundService extends Service {
         if (prayerTimes == null) return;
         
         SharedPreferences prefs = getSharedPreferences("PrayerWidgetPrefs", Context.MODE_PRIVATE);
-        // Varsayılan true olsun
         if (!prefs.getBoolean("full_screen_enabled", true)) return;
 
         Calendar now = Calendar.getInstance();
         String current = String.format("%02d:%02d", now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE));
         
-        String[] names = {"Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"}; // Sunrise (Güneş) genellikle ezan okunmaz, istersen ekle
+        String[] names = {"Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"};
         String[] trNames = {"İmsak", "Öğle", "İkindi", "Akşam", "Yatsı"};
         
         for (int i = 0; i < names.length; i++) {
