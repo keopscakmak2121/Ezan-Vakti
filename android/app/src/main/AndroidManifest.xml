@@ -35,25 +35,26 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
+    <!-- Temel İzinler -->
     <uses-permission android:name="android.permission.INTERNET" />
     
-    <!-- Geolocation Permissions -->
+    <!-- Konum İzinleri -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" />
 
-    <!-- Notification Permissions (Android 13+) -->
+    <!-- Bildirim ve Stabilite İzinleri -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
-    <!-- Exact Alarm Permission (Android 12+) - Required for precise Adhan timing -->
+    <!-- KRİTİK: Tam Ekran ve Kilit Ekranı İzinleri -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
-    <!-- Battery Optimization (Optional but recommended for Adhan apps) -->
+    <!-- Arka Plan Çalışma (Pil Optimizasyonu Muafiyeti) -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
 </manifest>
