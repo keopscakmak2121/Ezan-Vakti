@@ -4,27 +4,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b6ce7708-097c-4103-b282-8b57b8ef81e9" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/AppSettings.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/SetupWizard.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/capacitor.build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/capacitor.build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/MainActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/MainActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/capacitor.settings.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/capacitor.settings.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/index-DiICRHta.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/index-T5k-hgvO.css" beforeDir="false" afterPath="$PROJECT_DIR$/dist/assets/index-T5k-hgvO.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-CmLQ9Hwf.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-CtjPds42.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-CxUUKBXL.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-XcNJJ41Z.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/dist/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/SurahList.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/SurahList.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/quran/JuzReader.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/JuzReader.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/quran/MushafView.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/quran/QuranSearch.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/quran/QuranSearch.jsx" afterDir="false" />
-    </list>
+    <list default="true" id="b6ce7708-097c-4103-b282-8b57b8ef81e9" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
