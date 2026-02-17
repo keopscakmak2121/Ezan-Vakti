@@ -1,15 +1,16 @@
-// src/utils/tafsirStorage.js - Kesin Çözüm (JSON Path Fix)
+// src/utils/tafsirStorage.js - Kesin ve Kararlı Tefsir Sistemi
 
 const DB_NAME = 'quranTafsirDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'tafsirFiles';
 
-// Quran.com API v4 - Doğrulanmış Türkçe Kaynaklar
+// Quran.com API v4 - Sadece Doğrulanmış Türkçe Kaynaklar
 export const tafsirs = [
   { id: 'tr.tafheem', resourceId: 169, name: 'Mevdudi (Tefhimu\'l Kur\'an)', author: 'Mevdudi' },
   { id: 'tr.ibnkesir', resourceId: 170, name: 'İbn Kesir Tefsiri', author: 'İbn Kesir' },
-  { id: 'tr.diyanet', resourceId: 160, name: 'Diyanet Tefsiri', author: 'Diyanet İşleri Bşk.' },
-  { id: 'tr.elmalili', resourceId: 162, name: 'Elmalılı Hamdi Yazır', author: 'Elmalılı' }
+  { id: 'tr.muyassar', resourceId: 161, name: 'Tefsir el-Müyesser', author: 'Kur\'an Komp.' },
+  { id: 'tr.elmalili', resourceId: 162, name: 'Elmalılı Hamdi Yazır', author: 'Elmalılı' },
+  { id: 'tr.bilmen', resourceId: 163, name: 'Ömer Nasuhi Bilmen', author: 'Ömer Nasuhi Bilmen' }
 ];
 
 const initDB = () => {
@@ -60,27 +61,33 @@ export const saveTafsirOffline = async (surahNumber, ayahNumber, tafsirId, text)
   } catch (error) { return false; }
 };
 
-// En Kararlı API Çekme Fonksiyonu
+// API'den tefsir çeken yedekli fonksiyon
 const fetchTafsirFromAPI = async (surahNumber, ayahNumber, resourceId) => {
+  const verseKey = `${surahNumber}:${ayahNumber}`;
+
+  // 1. Yol: Doğrudan Tefsir Endpoint'i
   try {
-    // verse_key formatı: 1:1, 2:255 vb.
-    const verseKey = `${surahNumber}:${ayahNumber}`;
+    const url = `https://api.quran.com/api/v4/quran/tafsirs/${resourceId}?verse_key=${verseKey}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      const text = data.tafsirs?.[0]?.text || data.tafsir?.text;
+      if (text && text.length > 50) return text; // Kısa hatalı metinleri geç
+    }
+  } catch (e) {}
+
+  // 2. Yol: Ayet Bazlı Tefsir Endpoint'i (Yedek)
+  try {
     const url = `https://api.quran.com/api/v4/verses/by_key/${verseKey}?tafsirs=${resourceId}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      const text = data.verse?.tafsirs?.[0]?.text || data.tafsirs?.[0]?.text;
+      if (text && text.length > 50) return text;
+    }
+  } catch (e) {}
 
-    const response = await fetch(url);
-    if (!response.ok) return null;
-
-    const data = await response.json();
-
-    // API v4 by_key cevabı içindeki metni bul (Çok katmanlı kontrol)
-    return data.verse?.tafsirs?.[0]?.text ||
-           data.tafsirs?.[0]?.text ||
-           data.tafsir?.text || null;
-
-  } catch (e) {
-    console.error("Tefsir API Hatası:", e);
-    return null;
-  }
+  return null;
 };
 
 export const fetchTafsir = async (surahNumber, ayahNumber, tafsirId) => {
@@ -95,7 +102,7 @@ export const fetchTafsir = async (surahNumber, ayahNumber, tafsirId) => {
     return text;
   }
 
-  return 'Tefsir metni yüklenemedi. Lütfen Mevdudi veya İbn Kesir seçeneklerini de deneyin.';
+  return 'Tefsir metni şu an bu kaynakta bulunamadı. Lütfen listeden Mevdudi veya İbn Kesir seçeneklerini deneyin.';
 };
 
 export const downloadSurahTafsir = async (surahNumber, totalAyahs, tafsirId, onProgress) => {
