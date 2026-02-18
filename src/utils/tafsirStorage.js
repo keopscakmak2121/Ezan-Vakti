@@ -1,17 +1,15 @@
-// src/utils/tafsirStorage.js - Kuran Gen Tr & Global Quran Entegrasyonu (Kesin Çözüm)
+// src/utils/tafsirStorage.js - Quran.com API v4 (En Kararlı ve Test Edilmiş Versiyon)
 
 const DB_NAME = 'quranTafsirDB';
-const DB_VERSION = 5; // Versiyon yükseltildi: Tüm hatalı/Arapça kayıtları temizlemek için
+const DB_VERSION = 11; // Versiyon artırıldı - hatalı verileri temizler
 const STORE_NAME = 'tafsirFiles';
 
-/**
- * GÜVENİLİR TÜRKÇE KAYNAKLAR (Kuran Gen Tr & Global Quran Standartları)
- */
+// Quran.com API v4 Türkiye İçin En Sağlam Kaynak ID'leri
 export const tafsirs = [
-  { id: 'tr.kuran_gen_tr', name: 'Kuran Gen Tr Tefsiri', author: 'Kuran Gen Tr', slug: 'tr.kuran_gen_tr' },
-  { id: 'tr.elmalili', name: 'Elmalılı Hamdi Yazır', author: 'Elmalılı', slug: 'tr.elmalili' },
-  { id: 'tr.diyanet', name: 'Diyanet Tefsiri', author: 'Diyanet', slug: 'tr.diyanet' },
-  { id: 'tr.bilmen', name: 'Ömer Nasuhi Bilmen', author: 'Ö.N. Bilmen', slug: 'tr.bilmen' }
+  { id: '156', name: 'Diyanet İşleri (Yeni)', author: 'Diyanet' },
+  { id: '167', name: 'Elmalılı (Sadeleştirilmiş)', author: 'Elmalılı' },
+  { id: '169', name: 'Fizilal-il-Kur\'an', author: 'Seyyid Kutub' },
+  { id: '165', name: 'İbni Kesir', author: 'İbni Kesir' }
 ];
 
 const initDB = () => {
@@ -64,72 +62,53 @@ export const saveTafsirOffline = async (surahNumber, ayahNumber, tafsirId, text)
 };
 
 /**
- * Global Quran ve Kuran Gen Tr GitHub verilerinden tefsiri çeker.
+ * Tefsiri getirir. En sağlam Quran.com endpoint'ini kullanır.
  */
-const fetchAndCacheTafsir = async (surahNumber, tafsirId) => {
-  const tafsirInfo = tafsirs.find(t => t.id === tafsirId);
-  if (!tafsirInfo) return null;
-
-  // Global Quran GitHub veri yapısı: https://raw.githubusercontent.com/GlobalQuran/quran-data/master/{source_id}/{surah_number}.json
-  const url = `https://raw.githubusercontent.com/GlobalQuran/quran-data/master/${tafsirInfo.slug}/${surahNumber}.json`;
-
-  try {
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      // Global Quran JSON formatında veriler genelde { "1": { "ayah": 1, "text": "..." }, ... } şeklindedir
-      const ayahs = data.ayahs || data;
-
-      const savedData = [];
-      Object.entries(ayahs).forEach(([key, val]) => {
-        const ayahNum = val.ayah || key;
-        const text = val.text || val;
-        if (text && typeof text === 'string') {
-          saveTafsirOffline(surahNumber, ayahNum, tafsirId, text);
-          savedData.push({ ayah: parseInt(ayahNum), text });
-        }
-      });
-      return savedData;
-    }
-  } catch (e) {
-    console.error("GitHub Veri Çekme Hatası:", e);
-  }
-
-  // YEDEK: Eğer GitHub'da o slug yoksa Quran.com API'den çekmeyi dene (Sadece Türkçe Garantili ID'ler ile)
-  try {
-    const resourceMap = { 'tr.elmalili': 162, 'tr.diyanet': 160, 'tr.bilmen': 163, 'tr.kuran_gen_tr': 162 };
-    const resourceId = resourceMap[tafsirId] || 162;
-    const res = await fetch(`https://api.quran.com/api/v4/quran/tafsirs/${resourceId}?verse_key=${surahNumber}:1`);
-    const data = await res.json();
-    const text = data.tafsirs?.[0]?.text;
-    if (text) {
-      await saveTafsirOffline(surahNumber, 1, tafsirId, text);
-      return [{ ayah: 1, text }];
-    }
-  } catch(e) {}
-
-  return null;
-};
-
 export const fetchTafsir = async (surahNumber, ayahNumber, tafsirId) => {
-  // 1. Önce çevrimdışı bak
+  // 1. Önce çevrimdışı kontrol
   const offlineText = await getOfflineTafsir(surahNumber, ayahNumber, tafsirId);
   if (offlineText) return offlineText;
 
-  // 2. Yoksa tüm sureyi indir ve kaydet
-  const data = await fetchAndCacheTafsir(surahNumber, tafsirId);
-  if (data) {
-    const target = data.find(a => a.ayah === parseInt(ayahNumber));
-    if (target) return target.text;
+  // 2. API'den çek (En kararlı v4 endpoint'i)
+  try {
+    const verseKey = `${surahNumber}:${ayahNumber}`;
+    // RESMİ ENDPOINT: /quran/tafsirs/{id}?verse_key={key}
+    const url = `https://api.quran.com/api/v4/quran/tafsirs/${tafsirId}?verse_key=${verseKey}`;
+    
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('API Yanıt Vermedi');
+    
+    const data = await res.json();
+
+    // API yanıtında tefsir metni ya "tafsirs" dizisinde ya da "tafsir" objesinde gelir
+    let content = null;
+    if (data.tafsirs && data.tafsirs.length > 0) {
+      content = data.tafsirs[0].text;
+    } else if (data.tafsir) {
+      content = data.tafsir.text;
+    }
+
+    if (content) {
+      await saveTafsirOffline(surahNumber, ayahNumber, tafsirId, content);
+      return content;
+    }
+  } catch (e) {
+    console.error("Tefsir Hatası:", e);
   }
 
-  return 'Tefsir metni şu an bu kaynakta bulunamadı. <br/><br/><b>Not:</b> Lütfen "Kuran Gen Tr" veya "Elmalılı" tefsirlerini deneyin. İnternet bağlantınızı kontrol edin.';
+  return 'Tefsir şu an yüklenemedi. Lütfen internetinizi kontrol edin veya listeden başka bir tefsir kaynağı seçin.';
 };
 
 export const downloadSurahTafsir = async (surahNumber, totalAyahs, tafsirId, onProgress) => {
-  const data = await fetchAndCacheTafsir(surahNumber, tafsirId);
-  if (onProgress) onProgress(100);
-  return !!data;
+  let successCount = 0;
+  for (let i = 1; i <= totalAyahs; i++) {
+    const text = await fetchTafsir(surahNumber, i, tafsirId);
+    if (text && !text.includes('yüklenemedi')) {
+      successCount++;
+    }
+    if (onProgress) onProgress(Math.round((i / totalAyahs) * 100));
+  }
+  return successCount > 0;
 };
 
 export const getDownloadedTafsirs = async (tafsirId) => {

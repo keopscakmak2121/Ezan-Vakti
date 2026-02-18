@@ -17,27 +17,19 @@
         android:orientation="vertical">
         <TextView
             android:id="@+id/widget_small_prayer_name"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="İKİNDİ"
             android:textColor="#FBBF24"
             android:textSize="14sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:lines="1"
-            android:ellipsize="none"
-            android:autoSizeTextType="uniform"
-            android:autoSizeMinTextSize="8sp"
-            android:autoSizeMaxTextSize="14sp" />
+            android:textStyle="bold" />
         <TextView
             android:id="@+id/widget_small_prayer_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="15:45"
             android:textColor="#B3FFFFFF"
-            android:textSize="11sp"
-            android:maxLines="1"
-            android:lines="1" />
+            android:textSize="12sp" />
     </LinearLayout>
 
     <!-- Kalan Zaman (Sağ) -->
@@ -50,13 +42,6 @@
         android:text="01:20"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
-        android:textStyle="bold"
-        android:fontFamily="sans-serif-medium"
-        android:maxLines="1"
-        android:lines="1"
-        android:ellipsize="none"
-        android:autoSizeTextType="uniform"
-        android:autoSizeMinTextSize="10sp"
-        android:autoSizeMaxTextSize="18sp" />
+        android:textStyle="bold" />
 
 </LinearLayout>

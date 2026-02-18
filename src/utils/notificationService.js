@@ -20,15 +20,17 @@ export const createChannelsForPrayers = async () => {
 
     let soundName = undefined;
     if (settings.sound && config.enabled && sound && sound.file !== 'default') {
+      // Eğer dosya local ise (res/raw içindeyse) uzantısız ismini ver
       if (sound.local) {
         soundName = sound.file.replace('.mp3', '');
       } else {
-        soundName = config.soundType === 'adhan' ? 'adhan1' : 'notification1';
+        // İndirilen dosya ise, Capacitor'ın bildirim sistemi için dosya adını hazırla
+        // NOT: Native tarafta özel sesler için klasör yapısı önemlidir.
+        soundName = sound.file;
       }
     }
 
     try {
-      // KRİTİK: Tam ekran için IMPORTANCE_HIGH (5) ve VISIBILITY_PUBLIC (1) şart
       await LocalNotifications.createChannel({
         id: channelId,
         name: `Namaz - ${key} (${sound?.name || 'Varsayılan'})`,
@@ -69,9 +71,13 @@ export const scheduleNotifications = async (prayerTimings) => {
     let date = new Date();
     date.setHours(h, m, 0, 0);
 
-    if (prayerConfig.minutesBefore > 0) {
-      date.setMinutes(date.getMinutes() - prayerConfig.minutesBefore);
+    // adjustment veya minutesBefore kontrolü (Negatif değerler "Önce" demektir)
+    const offset = prayerConfig.adjustment || prayerConfig.minutesBefore || 0;
+    if (offset !== 0) {
+      date.setMinutes(date.getMinutes() + offset);
     }
+
+    // Eğer vakit geçtiyse yarına planla
     if (date < now) {
       date.setDate(date.getDate() + 1);
     }
@@ -82,21 +88,20 @@ export const scheduleNotifications = async (prayerTimings) => {
     notifications.push({
       id: PRAYER_IDS[key],
       title: `🕌 ${prayerNames[key]} Vakti`,
-      body: createNotificationMessage(key, -(prayerConfig.minutesBefore || 0)),
+      body: createNotificationMessage(key, offset),
       schedule: {
         at: date,
         allowWhileIdle: true,
-        repeats: false // Her gün tekrar yerine manuel planlama daha güvenli
+        repeats: false
       },
       channelId: channelId,
-      // KRİTİK: Tam ekran tetikleyici
-      fullScreenIntent: true,
-      ongoing: true, // Kilit ekranında kalması için
+      fullScreenIntent: settings.fullScreenEnabled !== false,
+      ongoing: true,
       autoCancel: false,
       extra: {
         prayerName: key,
         prayerTime: time,
-        type: 'PRAYER_ALARM' // JS tarafında yakalamak için
+        type: 'PRAYER_ALARM'
       }
     });
   }
@@ -105,11 +110,26 @@ export const scheduleNotifications = async (prayerTimings) => {
     await LocalNotifications.cancel({ notifications: Object.values(PRAYER_IDS).map(id => ({ id })) });
     if (notifications.length > 0) {
       await LocalNotifications.schedule({ notifications });
-      console.log(`✅ ${notifications.length} tam ekran bildirim planlandı`);
     }
   } catch (e) {
     console.error("Bildirim planlama hatası:", e);
   }
+};
+
+export const sendTestNotification = async () => {
+  if (!isNative()) return;
+  const settings = getNotificationSettings();
+
+  await LocalNotifications.schedule({
+    notifications: [{
+      id: 999,
+      title: "🔔 Test Bildirimi",
+      body: "Bildirim sistemi düzgün çalışıyor.",
+      schedule: { at: new Date(Date.now() + 1000) },
+      channelId: 'prayer-fajr-default',
+      extra: { type: 'TEST' }
+    }]
+  });
 };
 
 export const initNotificationService = async (prayerTimings) => {

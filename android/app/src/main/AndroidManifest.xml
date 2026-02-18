@@ -32,7 +32,7 @@
             android:exported="false"
             android:foregroundServiceType="specialUse" />
 
-        <!-- Ezan Vakti Widget (Geniş Liste) -->
+        <!-- 1. Ezan Vakti Widget (Geniş Liste) -->
         <receiver android:name=".PrayerWidgetProvider"
             android:exported="false">
             <intent-filter>
@@ -42,7 +42,7 @@
                 android:resource="@xml/prayer_widget_info" />
         </receiver>
 
-        <!-- Ezan Vakti Widget (Kompakt Kare) -->
+        <!-- 2. Ezan Vakti Widget (Kompakt Kare) -->
         <receiver android:name=".PrayerWidgetSmallProvider"
             android:exported="false">
             <intent-filter>

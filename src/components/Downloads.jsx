@@ -28,13 +28,14 @@ const Downloads = ({ darkMode, onSurahClick }) => {
   const [downloadedTafsirSurahs, setDownloadedTafsirSurahs] = useState({});
   const [totalAudioSize, setTotalAudioSize] = useState(0);
   const [loading, setLoading] = useState(true);
+
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
   const [bulkDownloadProgress, setBulkDownloadProgress] = useState(0);
   const [downloadingItemId, setDownloadingItemId] = useState(null);
   const [itemProgress, setItemProgress] = useState(0);
 
   const settings = getSettings();
-  const [currentReciter, setCurrentReciter] = useState(settings.reciter);
+  const currentReciter = settings.reciter || 'Alafasy_128kbps';
   const [selectedTafsirId, setSelectedTafsirId] = useState(tafsirOptions[0].id);
 
   const cardBg = darkMode ? '#1f2937' : 'white';
@@ -47,10 +48,11 @@ const Downloads = ({ darkMode, onSurahClick }) => {
 
   useEffect(() => {
     loadDownloads();
+    const interval = setInterval(loadDownloads, 5000);
+    return () => clearInterval(interval);
   }, [currentReciter, selectedTafsirId]);
 
   const loadDownloads = async () => {
-    setLoading(true);
     const [audio, texts, tafsirsData, audioSize] = await Promise.all([
       getDownloadedAudioSurahs(currentReciter),
       getDownloadedTextSurahs(),
@@ -66,7 +68,7 @@ const Downloads = ({ darkMode, onSurahClick }) => {
   };
 
   const handleDeleteAudio = async (surah) => {
-    if (window.confirm(`${surah.transliteration} suresi (${activeReciterName}) ses dosyalarını silmek istediğinize emin misiniz?`)) {
+    if (window.confirm(`${surah.transliteration} suresine ait tüm ses dosyalarını silmek istediğinize emin misiniz?`)) {
       await deleteAudioSurah(surah.number, currentReciter);
       await loadDownloads();
     }
@@ -80,6 +82,21 @@ const Downloads = ({ darkMode, onSurahClick }) => {
       await loadDownloads();
     } catch (error) { alert('Hata oluştu.'); }
     finally { setDownloadingItemId(null); }
+  };
+
+  const handleDownloadAllAudio = async () => {
+    if (!window.confirm(`Tüm Kuran sesleri (${activeReciterName}) indirilecek. Devam edilsin mi?`)) return;
+    setIsBulkDownloading(true);
+    setBulkDownloadProgress(0);
+    for (let i = 1; i <= 114; i++) {
+      const surah = allSurahs.find(s => s.number === i);
+      setDownloadingItemId(i);
+      await downloadAudioSurah(i, surah.ayahCount, (p) => setItemProgress(p), currentReciter);
+      setBulkDownloadProgress(i);
+    }
+    setDownloadingItemId(null);
+    setIsBulkDownloading(false);
+    await loadDownloads();
   };
 
   const handleDeleteText = async (surah) => {
@@ -99,11 +116,6 @@ const Downloads = ({ darkMode, onSurahClick }) => {
     }
     setIsBulkDownloading(false);
     await loadDownloads();
-  };
-
-  const handleDownloadSingleText = async (surah) => {
-    const success = await downloadSurahText(surah.number, settings.translation);
-    if (success) await loadDownloads();
   };
 
   const handleDownloadTafsir = async (surah) => {
@@ -132,12 +144,16 @@ const Downloads = ({ darkMode, onSurahClick }) => {
       <h2 style={{ fontSize: '24px', marginBottom: '20px', color: text }}>📥 İndirmeler</h2>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '5px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
         {['text', 'audio', 'tafsir'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            style={{ flex: 1, padding: '10px 5px', borderRadius: '10px', border: 'none', backgroundColor: activeTab === tab ? accent : (darkMode ? '#374151' : '#f3f4f6'), color: activeTab === tab ? 'white' : text, fontWeight: 'bold', fontSize: '13px' }}>
+            style={{
+                flex: 1, padding: '12px 5px', borderRadius: '12px', border: 'none',
+                backgroundColor: activeTab === tab ? accent : (darkMode ? '#374151' : '#f3f4f6'),
+                color: activeTab === tab ? 'white' : text, fontWeight: 'bold'
+            }}>
             {tab === 'text' ? '📖 Metin' : tab === 'audio' ? '🔊 Ses' : '📚 Tefsir'}
           </button>
         ))}
@@ -146,28 +162,26 @@ const Downloads = ({ darkMode, onSurahClick }) => {
       {/* Metinler Sekmesi */}
       {activeTab === 'text' && (
         <>
-          {isBulkDownloading ? (
-            <div style={{ padding: '20px', backgroundColor: darkMode ? '#374151' : '#f3f4f6', borderRadius: '12px', marginBottom: '20px', textAlign: 'center' }}>
-              <div style={{ marginBottom: '10px', fontWeight: 'bold', color: text }}>Tüm Kuran İndiriliyor...</div>
-              <div style={{ height: '10px', backgroundColor: '#e5e7eb', borderRadius: '5px', overflow: 'hidden' }}>
-                <div style={{ width: `${(bulkDownloadProgress / 114) * 100}%`, height: '100%', backgroundColor: accent }}></div>
-              </div>
-              <div style={{ fontSize: '12px', marginTop: '5px', color: textSec }}>{bulkDownloadProgress} / 114</div>
-            </div>
-          ) : (
-            <button onClick={handleDownloadAllText} style={{ width: '100%', padding: '15px', backgroundColor: accent, color: 'white', border: 'none', borderRadius: '12px', marginBottom: '20px', fontWeight: 'bold' }}>✨ Tüm Kuran'ı İndir</button>
+          {!isBulkDownloading && (
+            <button onClick={handleDownloadAllText} style={{ width: '100%', padding: '15px', backgroundColor: accent, color: 'white', border: 'none', borderRadius: '12px', marginBottom: '20px', fontWeight: 'bold' }}>✨ Tüm Metinleri İndir</button>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {allSurahs.map(surah => {
               const isDownloaded = downloadedTextSurahs.includes(surah.number);
               return (
-                <div key={surah.number} style={{ padding: '15px', backgroundColor: cardBg, borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div><div style={{ fontWeight: 'bold', color: text }}>{surah.number}. {surah.transliteration}</div><div style={{ fontSize: '12px', color: textSec }}>{surah.ayahCount} Ayet</div></div>
+                <div key={surah.number} style={{ padding: '15px', backgroundColor: cardBg, borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}` }}>
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: text }}>{surah.number}. {surah.transliteration}</div>
+                    <div style={{ fontSize: '12px', color: textSec }}>{surah.ayahCount} Ayet</div>
+                  </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {isDownloaded ? (
-                      <><button onClick={() => onSurahClick(surah)} style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#3b82f6', color: 'white' }}>Oku</button><button onClick={() => handleDeleteText(surah)} style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white' }}>Sil</button></>
+                      <>
+                        <button onClick={() => onSurahClick(surah)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold' }}>Oku</button>
+                        <button onClick={() => handleDeleteText(surah)} style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white' }}>Sil</button>
+                      </>
                     ) : (
-                      <button onClick={() => handleDownloadSingleText(surah)} style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${accent}`, color: accent, fontWeight: 'bold', background: 'none' }}>İndir</button>
+                      <button onClick={() => downloadSurahText(surah.number, settings.translation).then(loadDownloads)} style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${accent}`, color: accent, fontWeight: 'bold', background: 'none' }}>İndir</button>
                     )}
                   </div>
                 </div>
@@ -179,30 +193,59 @@ const Downloads = ({ darkMode, onSurahClick }) => {
 
       {/* Sesler Sekmesi */}
       {activeTab === 'audio' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ padding: '15px', backgroundColor: darkMode ? '#374151' : '#f3f4f6', borderRadius: '12px', marginBottom: '10px' }}>
-            <div style={{ color: accent, fontWeight: 'bold', fontSize: '14px' }}>🎙️ Aktif Hafız: {activeReciterName}</div>
-            <div style={{ color: text, fontSize: '12px', marginTop: '5px' }}>Toplam: {formatBytes(totalAudioSize)}</div>
+        <>
+          {!isBulkDownloading && (
+            <button onClick={handleDownloadAllAudio} style={{ width: '100%', padding: '15px', backgroundColor: accent, color: 'white', border: 'none', borderRadius: '12px', marginBottom: '20px', fontWeight: 'bold' }}>🎙️ Tüm Sesleri İndir ({activeReciterName})</button>
+          )}
+          <div style={{ padding: '15px', backgroundColor: darkMode ? '#374151' : '#f3f4f6', borderRadius: '12px', marginBottom: '15px' }}>
+            <div style={{ color: accent, fontWeight: 'bold', fontSize: '14px' }}>🎙️ Hafız: {activeReciterName}</div>
+            <div style={{ color: text, fontSize: '12px', marginTop: '5px' }}>Toplam Ses Verisi: {formatBytes(totalAudioSize)}</div>
           </div>
-          {allSurahs.map(surah => {
-            const ayahNumbers = downloadedAudioSurahs[surah.number] || [];
-            const isDownloaded = ayahNumbers.length === surah.ayahCount;
-            const isDownloading = downloadingItemId === surah.number;
-            return (
-              <div key={surah.number} style={{ padding: '15px', backgroundColor: cardBg, borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div><div style={{ fontWeight: 'bold', color: text }}>{surah.number}. {surah.transliteration}</div><div style={{ fontSize: '12px', color: textSec }}>{isDownloaded ? 'İndirildi' : `${ayahNumbers.length}/${surah.ayahCount}`}</div></div>
-                  {isDownloaded ? (
-                    <button onClick={() => handleDeleteAudio(surah)} style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white' }}>Sil</button>
-                  ) : (
-                    <button onClick={() => handleDownloadAudio(surah)} disabled={isDownloading} style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${accent}`, color: accent, fontWeight: 'bold', background: 'none' }}>{isDownloading ? '...' : 'İndir'}</button>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {allSurahs.map(surah => {
+              const downloadedAyahs = downloadedAudioSurahs[surah.number] || [];
+              const count = downloadedAyahs.length;
+              const isFullyDownloaded = count === surah.ayahCount;
+              const hasSomeDownload = count > 0;
+              const isDownloading = downloadingItemId === surah.number;
+
+              return (
+                <div key={surah.number} style={{ padding: '15px', backgroundColor: cardBg, borderRadius: '12px', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', color: text }}>{surah.number}. {surah.transliteration}</div>
+                      <div style={{ fontSize: '12px', color: isFullyDownloaded ? '#059669' : (hasSomeDownload ? '#f59e0b' : textSec) }}>
+                        {isFullyDownloaded ? 'Tamamı İndirildi' : (hasSomeDownload ? `${count} / ${surah.ayahCount} Ayet İndi` : 'Henüz İndirilmedi')}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {hasSomeDownload && (
+                        <button onClick={() => handleDeleteAudio(surah)} style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white' }}>Sil</button>
+                      )}
+
+                      {!isFullyDownloaded ? (
+                        <button
+                          onClick={() => handleDownloadAudio(surah)}
+                          disabled={isDownloading}
+                          style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${accent}`, color: accent, fontWeight: 'bold', background: 'none' }}>
+                          {isDownloading ? '...' : (hasSomeDownload ? 'Tamamla' : 'İndir')}
+                        </button>
+                      ) : (
+                        <button onClick={() => onSurahClick(surah)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold' }}>Dinle</button>
+                      )}
+                    </div>
+                  </div>
+                  {isDownloading && (
+                    <div style={{ height: '6px', background: darkMode ? '#1f2937' : '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${itemProgress}%`, height: '100%', background: accent }}></div>
+                    </div>
                   )}
                 </div>
-                {isDownloading && <div style={{ height: '4px', background: '#e5e7eb', borderRadius: '2px', overflow: 'hidden' }}><div style={{ width: `${itemProgress}%`, height: '100%', background: accent }}></div></div>}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* Tefsirler Sekmesi */}
@@ -222,15 +265,32 @@ const Downloads = ({ darkMode, onSurahClick }) => {
             const ayahNumbers = downloadedTafsirSurahs[surah.number] || [];
             const isDownloaded = ayahNumbers.length === surah.ayahCount;
             const isDownloading = downloadingItemId === surah.number;
+            const count = ayahNumbers.length;
+
             return (
-              <div key={surah.number} style={{ padding: '15px', backgroundColor: cardBg, borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div key={surah.number} style={{ padding: '15px', backgroundColor: cardBg, borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div><div style={{ fontWeight: 'bold', color: text }}>{surah.number}. {surah.transliteration}</div><div style={{ fontSize: '12px', color: textSec }}>{isDownloaded ? 'Tefsir İndirildi' : `${ayahNumbers.length}/${surah.ayahCount} Ayet`}</div></div>
-                  {isDownloaded ? (
-                    <button onClick={() => handleDeleteTafsir(surah)} style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white' }}>Sil</button>
-                  ) : (
-                    <button onClick={() => handleDownloadTafsir(surah)} disabled={isDownloading} style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${accent}`, color: accent, fontWeight: 'bold', background: 'none' }}>{isDownloading ? '...' : 'Tefsir İndir'}</button>
-                  )}
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: text }}>{surah.number}. {surah.transliteration}</div>
+                    <div style={{ fontSize: '12px', color: isDownloaded ? '#059669' : (count > 0 ? '#f59e0b' : textSec) }}>
+                        {isDownloaded ? 'Tefsir İndirildi' : (count > 0 ? `${count} / ${surah.ayahCount} Ayet İndi` : 'Tefsir İndirilmedi')}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {count > 0 && (
+                      <button onClick={() => handleDeleteTafsir(surah)} style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white' }}>Sil</button>
+                    )}
+                    {!isDownloaded ? (
+                      <button
+                        onClick={() => handleDownloadTafsir(surah)}
+                        disabled={isDownloading}
+                        style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${accent}`, color: accent, fontWeight: 'bold', background: 'none' }}>
+                        {isDownloading ? '...' : (count > 0 ? 'Tamamla' : 'İndir')}
+                      </button>
+                    ) : (
+                        <button onClick={() => onSurahClick(surah)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold' }}>Oku</button>
+                    )}
+                  </div>
                 </div>
                 {isDownloading && <div style={{ height: '4px', background: '#e5e7eb', borderRadius: '2px', overflow: 'hidden' }}><div style={{ width: `${itemProgress}%`, height: '100%', background: accent }}></div></div>}
               </div>
