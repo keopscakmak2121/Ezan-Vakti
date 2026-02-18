@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import NoteModal from './NoteModal';
-import TafsirModal from './TafsirModal'; // Yeni eklendi
 import { hasNote } from '../../utils/ayahNotesStorage';
 
 const AyahCard = ({
@@ -16,13 +15,18 @@ const AyahCard = ({
   theme // Tema renkleri
 }) => {
   const [showNoteModal, setShowNoteModal] = useState(false);
-  const [showTafsirModal, setShowTafsirModal] = useState(false); // Yeni eklendi
+  const [toastMsg, setToastMsg] = useState(null);
   const [ayahHasNote, setAyahHasNote] = useState(hasNote(ayah.surahNumber || 1, ayah.number));
 
   const cardBg = theme ? theme.bg : (darkMode ? '#1f2937' : '#ffffff');
   const textColor = theme ? theme.text : (darkMode ? '#f3f4f6' : '#1f2937');
   const subTextColor = theme ? theme.sub : (darkMode ? '#cbd5e1' : '#475569');
   const borderColor = theme ? (settings.readerTheme === 'dark' || settings.readerTheme === 'black' ? '#374151' : '#e5e7eb') : (darkMode ? '#374151' : '#e5e7eb');
+
+  const showToast = (msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
 
   const handleNoteSave = () => {
     setAyahHasNote(true);
@@ -108,9 +112,9 @@ const AyahCard = ({
           marginTop: '12px',
           flexWrap: 'wrap'
         }}>
-          {/* TEFSİR BUTONU - YENİ */}
+          {/* TEFSİR BUTONU */}
           <button
-            onClick={() => setShowTafsirModal(true)}
+            onClick={() => showToast("Tefsir özelliği yakında eklenecektir.")}
             title="Tefsir Oku"
             style={buttonStyle}
           >
@@ -166,13 +170,24 @@ const AyahCard = ({
         />
       )}
 
-      {showTafsirModal && (
-        <TafsirModal
-          surahNumber={ayah.surahNumber || 1}
-          ayahNumber={ayah.number}
-          darkMode={settings.readerTheme === 'dark' || settings.readerTheme === 'black'}
-          onClose={() => setShowTafsirModal(false)}
-        />
+      {/* Toast Mesajı */}
+      {toastMsg && (
+        <div style={{
+          position: 'fixed',
+          bottom: '100px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#374151',
+          color: '#fff',
+          padding: '10px 20px',
+          borderRadius: '20px',
+          fontSize: '14px',
+          zIndex: 10001,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          whiteSpace: 'nowrap'
+        }}>
+          {toastMsg}
+        </div>
       )}
     </>
   );
