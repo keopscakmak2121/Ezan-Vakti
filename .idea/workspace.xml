@@ -6,23 +6,14 @@
   <component name="ChangeListManager">
     <list default="true" id="b6ce7708-097c-4103-b282-8b57b8ef81e9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerForegroundService.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerForegroundService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerPlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/com/quran/kerim/PrayerPlugin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/capacitor.config.json" beforeDir="false" afterPath="$PROJECT_DIR$/capacitor.config.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/index-CVxq6foY.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-4SvM4jk9.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-BSSvzOvj.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-CH3e4m6J.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-VUyZhIOW.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/index-D7IiMICx.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-CAWos02i.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-CCzOEQ_W.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-Dcfd2h0z.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-DhcxYlop.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/dist/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/FullScreenNotification.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/FullScreenNotification.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/SetupWizard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/SetupWizard.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/home/HomePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/home/HomePage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Settings.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Settings.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/notificationService.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/notificationService.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/notificationStorage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/notificationStorage.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/ongoingNotification.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/ongoingNotification.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/tafsirStorage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/tafsirStorage.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/widgetBridge.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/widgetBridge.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

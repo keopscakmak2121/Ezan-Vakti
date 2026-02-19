@@ -41,7 +41,6 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
     setSettings(newSettings);
     saveNotificationSettings(newSettings);
 
-    // Eğer kalıcı bildirim ayarı değiştiyse aksiyon al
     if (key === 'ongoingEnabled') {
       if (value) {
         const stored = getStoredPrayerTimes();
@@ -51,7 +50,6 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
       }
     }
 
-    // Tam ekran bildirim ayarı değiştiyse Native tarafa bildir
     if (key === 'fullScreenEnabled') {
       PrayerPlugin.setFullScreenEnabled({ enabled: value });
     }
@@ -187,7 +185,6 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
           </div>
         </div>
 
-        {/* Kalıcı Bildirim Ayarı */}
         <div style={styles.row}>
           <div style={styles.labelContainer}>
             <Clock size={20} />
@@ -199,7 +196,6 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
           <Toggle checked={settings.ongoingEnabled} onChange={(e) => handleSettingChange('ongoingEnabled', e.target.checked)} />
         </div>
 
-        {/* Tam Ekran Bildirim Ayarı */}
         <div style={styles.row}>
           <div style={styles.labelContainer}>
             <Monitor size={20} />
@@ -265,14 +261,7 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
                       <span style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>Ses Seçimi</span>
                       <select style={{...styles.select, width: '100%', marginBottom: '10px', boxSizing: 'border-box'}} value={soundId} onChange={(e) => {
                         const newSoundId = e.target.value;
-                        const allSounds = [...SOUND_OPTIONS.adhan, ...SOUND_OPTIONS.notification];
-                        const selectedSound = allSounds.find(s => s.id === newSoundId);
-                        if (selectedSound && !selectedSound.local && !isSoundDownloaded(newSoundId) && newSoundId !== 'default') {
-                          handlePrayerSettingChange(key, 'soundId', newSoundId);
-                          alert('Bu ses henüz indirilmedi. Aşağıdaki İndir butonuna basarak sesi indirin.');
-                        } else {
-                          handlePrayerSettingChange(key, 'soundId', newSoundId);
-                        }
+                        handlePrayerSettingChange(key, 'soundId', newSoundId);
                       }}>
                         <optgroup label="📱 Yüklü Sesler">
                           {(SOUND_OPTIONS[soundType] || []).filter(s => s.local).map(s => (
@@ -295,18 +284,6 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
                           {downloadingId === soundId ? '⏳ İndiriliyor...' : <><Download size={16} /> İndir</>}
                         </button>
                       )}
-
-                      {isDownloaded && soundId !== 'default' && (() => {
-                        const allSounds = [...SOUND_OPTIONS.adhan, ...SOUND_OPTIONS.notification];
-                        const s = allSounds.find(x => x.id === soundId);
-                        return s && !s.local;
-                      })() && (
-                        <div style={{ textAlign: 'center', padding: '10px', color: '#f59e0b', fontSize: '12px', backgroundColor: darkMode ? '#1f2937' : '#fefce8', borderRadius: '8px', marginTop: '6px', lineHeight: '1.5' }}>
-                          ✅ İndirildi — Dinle ile önizleyebilirsiniz.<br/>
-                          ⚠️ Bildirimde varsayılan ezan/bildirim sesi çalar.<br/>
-                          <span style={{ fontSize: '11px', opacity: 0.7 }}>(Gelecek güncellemede bildirimde de bu ses çalacak)</span>
-                        </div>
-                      )}
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -314,7 +291,21 @@ const Settings = ({ darkMode, toggleDarkMode, onThemeChange }) => {
                         <span style={{ fontSize: '14px' }}>Kaç Dakika Önce?</span>
                         <span style={{ fontSize: '11px', opacity: 0.6 }}>(0 = Tam vaktinde)</span>
                       </div>
-                      <input type="number" style={{ width: '60px', padding: '6px', borderRadius: '6px', border: `1px solid ${darkMode ? '#4b5563' : '#d1d5db'}`, backgroundColor: darkMode ? '#374151' : '#fff', color: darkMode ? '#fff' : '#000', textAlign: 'center' }} value={config.minutesBefore || 0} onChange={(e) => handlePrayerSettingChange(key, 'minutesBefore', parseInt(e.target.value) || 0)} min="0" max="60" />
+                      <input
+                        type="number"
+                        style={{ width: '60px', padding: '6px', borderRadius: '6px', border: `1px solid ${darkMode ? '#4b5563' : '#d1d5db'}`, backgroundColor: darkMode ? '#374151' : '#fff', color: darkMode ? '#fff' : '#000', textAlign: 'center' }}
+                        value={config.minutesBefore === 0 ? "" : config.minutesBefore}
+                        placeholder="0"
+                        onFocus={(e) => { if (parseInt(e.target.value) === 0) e.target.value = ""; }}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? 0 : parseInt(e.target.value);
+                          if (!isNaN(val) && val <= 60) {
+                            handlePrayerSettingChange(key, 'minutesBefore', val);
+                          }
+                        }}
+                        min="0"
+                        max="60"
+                      />
                     </div>
                   </div>
                 )}
