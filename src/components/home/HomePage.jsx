@@ -5,10 +5,10 @@ import NextPrayerCard from './NextPrayerCard.jsx';
 import PrayerTimeCards from './PrayerTimeCards.jsx';
 import TabPanel from './TabPanel.jsx';
 import DailyPrayerCard from './DailyPrayerCard.jsx';
-import PrayerAlertOverlay from './PrayerAlertOverlay.jsx';
 import { getPrayerTimesByCoordinates, getUserLocation, getNextPrayer, getCityFromCoordinates } from '../../utils/prayerTimesApi.js';
 import { getStoredPrayerTimes, storePrayerTimes } from '../../utils/storage.js';
 import { getHomeThemeColors } from '../../utils/settingsStorage.js';
+import { updatePrayerWidget } from '../../utils/widgetBridge.js';
 
 const calculateCountdown = (prayerTime, isTomorrow) => {
   if (!prayerTime) return null;
@@ -34,9 +34,7 @@ const HomePage = ({ darkMode, onNavigate }) => {
   const [locationName, setLocationName] = useState('Konum...');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [alertData, setAlertData] = useState(null); // Tam ekran bildirim
   const isMounted = useRef(true);
-  const lastAlertedPrayer = useRef(null); // Aynı vakti tekrar tetikleme
 
   useEffect(() => {
     isMounted.current = true;
@@ -46,6 +44,8 @@ const HomePage = ({ darkMode, onNavigate }) => {
       setNextPrayer(getNextPrayer(storedData.timings));
       setLocationName(storedData.locationName);
       setLoading(false);
+      // Widgetları başlangıçta da güncelle
+      updatePrayerWidget(storedData.timings, storedData.locationName);
     } else {
       loadPrayerTimesRemote();
     }
@@ -59,13 +59,6 @@ const HomePage = ({ darkMode, onNavigate }) => {
         setCountdown(newCountdown);
 
         if (newCountdown === '00:00:00' && prayerTimes) {
-          const alertKey = `${nextPrayer.name}-${nextPrayer.time}`;
-          if (lastAlertedPrayer.current !== alertKey) {
-            lastAlertedPrayer.current = alertKey;
-            if (nextPrayer.name !== 'Güneş') {
-              setAlertData({ name: nextPrayer.name, time: nextPrayer.time });
-            }
-          }
           const updatedNextPrayer = getNextPrayer(prayerTimes);
           setNextPrayer(updatedNextPrayer);
         }
@@ -89,6 +82,8 @@ const HomePage = ({ darkMode, onNavigate }) => {
         setNextPrayer(getNextPrayer(prayerResult.timings));
         setLocationName(cityResult);
         storePrayerTimes(prayerResult.timings, cityResult);
+        // Widgetları yeni verilerle güncelle
+        updatePrayerWidget(prayerResult.timings, cityResult);
       }
     } catch (err) {
       if (isMounted.current) setError(err.message);
@@ -114,15 +109,6 @@ const HomePage = ({ darkMode, onNavigate }) => {
 
   return (
     <div style={{padding: '10px'}}>
-      {alertData && (
-        <PrayerAlertOverlay
-          prayerName={alertData.name}
-          prayerTime={alertData.time}
-          darkMode={darkMode}
-          onDismiss={() => setAlertData(null)}
-        />
-      )}
-
       <NextPrayerCard nextPrayer={nextPrayer} countdown={countdown} darkMode={darkMode} locationName={locationName} />
       <PrayerTimeCards prayerTimes={prayerTimes} darkMode={darkMode} themeColors={getHomeThemeColors(darkMode)} />
       <TabPanel darkMode={darkMode} />

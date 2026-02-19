@@ -1,15 +1,21 @@
-// src/utils/tafsirStorage.js - Quran.com API v4 (En Kararlı ve Test Edilmiş Versiyon)
+// src/utils/tafsirStorage.js - spa5k/tafsir_api (RAW GITHUB URL - En Kararlı)
 
 const DB_NAME = 'quranTafsirDB';
-const DB_VERSION = 11; // Versiyon artırıldı - hatalı verileri temizler
+const DB_VERSION = 14; // Versiyonu artırarak eski hatalı verileri siliyoruz
 const STORE_NAME = 'tafsirFiles';
 
-// Quran.com API v4 Türkiye İçin En Sağlam Kaynak ID'leri
+// GitHub (spa5k/tafsir_api) üzerindeki Türkçe tefsir yolları
 export const tafsirs = [
-  { id: '156', name: 'Diyanet İşleri (Yeni)', author: 'Diyanet' },
-  { id: '167', name: 'Elmalılı (Sadeleştirilmiş)', author: 'Elmalılı' },
-  { id: '169', name: 'Fizilal-il-Kur\'an', author: 'Seyyid Kutub' },
-  { id: '165', name: 'İbni Kesir', author: 'İbni Kesir' }
+  {
+    id: 'tr-tafsir-elmalili-hamdi-yazir',
+    name: 'Elmalılı Hamdi Yazır',
+    author: 'Elmalılı'
+  },
+  {
+    id: 'tr-tafsir-diyanet-isleri-baskanligi',
+    name: 'Diyanet İşleri',
+    author: 'Diyanet'
+  }
 ];
 
 const initDB = () => {
@@ -27,85 +33,65 @@ const initDB = () => {
   });
 };
 
-const makeKey = (tafsirId, surahNumber, ayahNumber) => `${tafsirId}:${surahNumber}-${ayahNumber}`;
+const makeKey = (tafsirId, surah, ayah) => `${tafsirId}:${surah}-${ayah}`;
 
-export const getOfflineTafsir = async (surahNumber, ayahNumber, tafsirId) => {
+export const getOfflineTafsir = async (surah, ayah, tafsirId) => {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], 'readonly');
     const store = transaction.objectStore(STORE_NAME);
-    const key = makeKey(tafsirId, surahNumber, ayahNumber);
+    const key = makeKey(tafsirId, surah, ayah);
     return new Promise((resolve) => {
       const request = store.get(key);
       request.onsuccess = () => resolve(request.result?.text || null);
       request.onerror = () => resolve(null);
     });
-  } catch (error) { return null; }
+  } catch (e) { return null; }
 };
 
-export const saveTafsirOffline = async (surahNumber, ayahNumber, tafsirId, text) => {
+export const saveTafsirOffline = async (surah, ayah, tafsirId, text) => {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
-    const key = makeKey(tafsirId, surahNumber, ayahNumber);
-    await store.put({
-      id: key,
-      tafsirId,
-      surahNumber: parseInt(surahNumber),
-      ayahNumber: parseInt(ayahNumber),
-      text,
-      savedAt: new Date().toISOString()
-    });
+    const key = makeKey(tafsirId, surah, ayah);
+    await store.put({ id: key, tafsirId, surahNumber: surah, ayahNumber: ayah, text, savedAt: new Date().toISOString() });
     return true;
-  } catch (error) { return false; }
+  } catch (e) { return false; }
 };
 
-/**
- * Tefsiri getirir. En sağlam Quran.com endpoint'ini kullanır.
- */
 export const fetchTafsir = async (surahNumber, ayahNumber, tafsirId) => {
-  // 1. Önce çevrimdışı kontrol
+  // 1. Önce çevrimdışı bak
   const offlineText = await getOfflineTafsir(surahNumber, ayahNumber, tafsirId);
   if (offlineText) return offlineText;
 
-  // 2. API'den çek (En kararlı v4 endpoint'i)
+  // 2. RAW GITHUB URL üzerinden çek (Daha Güvenilir)
   try {
-    const verseKey = `${surahNumber}:${ayahNumber}`;
-    // RESMİ ENDPOINT: /quran/tafsirs/{id}?verse_key={key}
-    const url = `https://api.quran.com/api/v4/quran/tafsirs/${tafsirId}?verse_key=${verseKey}`;
+    const url = `https://raw.githubusercontent.com/spa5k/tafsir_api/main/tafsir/${tafsirId}/${surahNumber}/${ayahNumber}.json`;
     
     const res = await fetch(url);
-    if (!res.ok) throw new Error('API Yanıt Vermedi');
+    if (!res.ok) throw new Error('Dosya bulunamadı veya ağ hatası');
     
     const data = await res.json();
-
-    // API yanıtında tefsir metni ya "tafsirs" dizisinde ya da "tafsir" objesinde gelir
-    let content = null;
-    if (data.tafsirs && data.tafsirs.length > 0) {
-      content = data.tafsirs[0].text;
-    } else if (data.tafsir) {
-      content = data.tafsir.text;
-    }
+    const content = data.text;
 
     if (content) {
       await saveTafsirOffline(surahNumber, ayahNumber, tafsirId, content);
       return content;
     }
   } catch (e) {
-    console.error("Tefsir Hatası:", e);
+    console.error("Tefsir çekme hatası:", e);
   }
 
-  return 'Tefsir şu an yüklenemedi. Lütfen internetinizi kontrol edin veya listeden başka bir tefsir kaynağı seçin.';
+  return 'Tefsir yüklenemedi. Lütfen internetinizi kontrol edin.';
 };
 
+// İndirme ve diğer yardımcı fonksiyonlar aynı kalabilir
 export const downloadSurahTafsir = async (surahNumber, totalAyahs, tafsirId, onProgress) => {
   let successCount = 0;
   for (let i = 1; i <= totalAyahs; i++) {
     const text = await fetchTafsir(surahNumber, i, tafsirId);
-    if (text && !text.includes('yüklenemedi')) {
-      successCount++;
-    }
+    if (text && !text.includes('yüklenemedi')) successCount++;
     if (onProgress) onProgress(Math.round((i / totalAyahs) * 100));
   }
   return successCount > 0;
@@ -121,7 +107,7 @@ export const getDownloadedTafsirs = async (tafsirId) => {
       request.onsuccess = () => {
         const surahMap = {};
         request.result.forEach(item => {
-          if (!tafsirId || item.tafsirId === tafsirId) {
+          if (item.tafsirId === tafsirId) {
             if (!surahMap[item.surahNumber]) surahMap[item.surahNumber] = [];
             surahMap[item.surahNumber].push(item.ayahNumber);
           }
@@ -130,7 +116,7 @@ export const getDownloadedTafsirs = async (tafsirId) => {
       };
       request.onerror = () => resolve({});
     });
-  } catch (error) { return {}; }
+  } catch (e) { return {}; }
 };
 
 export const deleteSurahTafsir = async (surahNumber, tafsirId) => {
@@ -142,12 +128,12 @@ export const deleteSurahTafsir = async (surahNumber, tafsirId) => {
     await new Promise((resolve) => {
       allRequest.onsuccess = () => {
         allRequest.result
-          .filter(item => item.surahNumber === parseInt(surahNumber) && (!tafsirId || item.tafsirId === tafsirId))
+          .filter(item => item.tafsirId === tafsirId && item.surahNumber === parseInt(surahNumber))
           .forEach(item => store.delete(item.id));
         resolve();
       };
       allRequest.onerror = () => resolve();
     });
     return true;
-  } catch (error) { return false; }
+  } catch (e) { return false; }
 };

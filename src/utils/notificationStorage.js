@@ -26,10 +26,11 @@ export const SOUND_OPTIONS = {
     { id: 'notification2', name: 'Zil Sesi', file: 'notification2.mp3', local: true },
     { id: 'notification3', name: 'Dijital Bip', file: 'notification3.mp3', local: true },
     { id: 'notification4', name: 'Yumuşak Ton', file: 'notification4.mp3', local: true },
-    { id: 'notif_beep1', name: 'Çift Bip', file: 'notif_beep1.mp3', local: false, remoteUrl: 'https://www.soundjay.com/buttons/beep-07a.mp3' },
-    { id: 'notif_chime', name: 'Çan Sesi', file: 'notif_chime.mp3', local: false, remoteUrl: 'https://www.soundjay.com/buttons/beep-01a.mp3' },
-    { id: 'notif_soft', name: 'Hafif Melodi', file: 'notif_soft.mp3', local: false, remoteUrl: 'https://www.soundjay.com/buttons/beep-08b.mp3' },
-    { id: 'notif_bird', name: 'Kuş Sesi', file: 'notif_bird.mp3', local: false, remoteUrl: 'https://www.soundjay.com/nature/bird-chirp-1.mp3' },
+    // Kesin çalışan Pixabay linkleri
+    { id: 'notif_beep1', name: 'Kısa Bip', file: 'notif_beep1.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a7315b.mp3' },
+    { id: 'notif_chime', name: 'Modern Uyarı', file: 'notif_chime.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/03/15/audio_7302484f98.mp3' },
+    { id: 'notif_soft', name: 'Yumuşak Melodi', file: 'notif_soft.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2021/08/04/audio_03d98a2879.mp3' },
+    { id: 'notif_bird', name: 'Kuş Sesi', file: 'notif_bird.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2021/11/25/audio_91b32e01fa.mp3' },
     { id: 'default', name: 'Sistem Varsayılanı', file: 'default', local: true }
   ]
 };
@@ -39,7 +40,7 @@ export const getDefaultNotificationSettings = () => ({
   sound: true,
   vibration: true,
   ongoingEnabled: false,
-  fullScreenEnabled: true, // Yeni ayar: Tam Ekran Bildirim
+  fullScreenEnabled: true,
   prayerNotifications: {
     Fajr: { enabled: true, minutesBefore: 0, soundId: 'adhan1', soundType: 'adhan', vibration: true },
     Sunrise: { enabled: true, minutesBefore: 0, soundId: 'notification1', soundType: 'notification', vibration: false },
@@ -56,13 +57,10 @@ export const getNotificationSettings = () => {
     if (!settings) return getDefaultNotificationSettings();
     const parsed = JSON.parse(settings);
     const defaults = getDefaultNotificationSettings();
-
-    // Eksik alanları tamamla
     if (!parsed.prayerNotifications || !parsed.prayerNotifications.Fajr) return defaults;
     if (parsed.vibration === undefined) parsed.vibration = true;
     if (parsed.ongoingEnabled === undefined) parsed.ongoingEnabled = false;
     if (parsed.fullScreenEnabled === undefined) parsed.fullScreenEnabled = true;
-
     return parsed;
   } catch (error) {
     return getDefaultNotificationSettings();
@@ -87,24 +85,29 @@ export const downloadAdhanSound = async (soundId, soundType) => {
   const soundList = SOUND_OPTIONS[soundType] || [];
   const sound = soundList.find(s => s.id === soundId);
   if (!sound || sound.local || !sound.remoteUrl) return true;
+
   try {
-    const response = await fetch(sound.remoteUrl);
-    if (!response.ok) throw new Error('İndirme başarısız');
-    const blob = await response.blob();
-    const base64Data = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = () => reject(new Error('Dosya okunamadı'));
-      reader.readAsDataURL(blob);
-    });
     if (Capacitor.isNativePlatform()) {
-      await Filesystem.writeFile({
+      // 1) Dizin oluştur
+      try {
+        await Filesystem.mkdir({
+          path: 'sounds',
+          directory: Directory.Data,
+          recursive: true
+        });
+      } catch (e) {
+        // Zaten varsa hata verebilir, yoksayıyoruz
+      }
+
+      // 2) İndirme (Daha önce çalışan kararlı yöntem)
+      await Filesystem.downloadFile({
+        url: sound.remoteUrl,
         path: `sounds/${sound.file}`,
-        data: base64Data,
-        directory: Directory.Data,
-        recursive: true
+        directory: Directory.Data
       });
     }
+
+    // 3) Kayıt listesini güncelle
     const downloaded = JSON.parse(localStorage.getItem(DOWNLOADED_SOUNDS_KEY) || '[]');
     if (!downloaded.includes(soundId)) {
       downloaded.push(soundId);
@@ -112,6 +115,7 @@ export const downloadAdhanSound = async (soundId, soundType) => {
     }
     return true;
   } catch (e) {
+    console.error('İndirme hatası:', e);
     return false;
   }
 };

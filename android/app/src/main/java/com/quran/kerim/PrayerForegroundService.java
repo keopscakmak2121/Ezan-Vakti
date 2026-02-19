@@ -8,6 +8,10 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -20,9 +24,10 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import org.json.JSONObject;
+import java.io.File;
 import java.util.Calendar;
 
-public class PrayerForegroundService extends Service {
+public class PrayerForegroundService extends Service implements SensorEventListener {
     private static final String CHANNEL_ID = "PrayerServiceChannel";
     private static final String ALARM_CHANNEL_ID = "PrayerAlarmChannel";
     private Handler handler = new Handler(Looper.getMainLooper());
@@ -31,15 +36,29 @@ public class PrayerForegroundService extends Service {
     private String lastTriggeredPrayer = "";
     private MediaPlayer mediaPlayer;
 
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private boolean isAdhanPlaying = false;
+
     @Override
     public void onCreate() {
         super.onCreate();
         createNotificationChannel();
         createAlarmChannel();
+        
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (sensorManager != null) {
+            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null && "STOP_ADHAN".equals(intent.getAction())) {
+            stopAdhan();
+            return START_STICKY;
+        }
+
         String prayerTimesStr = intent != null ? intent.getStringExtra("prayerTimes") : null;
         SharedPreferences prefs = getSharedPreferences("PrayerWidgetPrefs", Context.MODE_PRIVATE);
         
@@ -60,10 +79,13 @@ public class PrayerForegroundService extends Service {
             @Override
             public void run() {
                 updateNotification();
+                // Widget'ı her bildirim güncellemesinde tetikle
+                updateWidgets();
+                
                 checkPrayerTime();
                 
                 long now = System.currentTimeMillis();
-                long delay = 60000 - (now % 60000);
+                long delay = 60000 - (now % 60000); // Dakika başında tekrar çalış
                 handler.postDelayed(this, delay);
             }
         };
@@ -72,11 +94,27 @@ public class PrayerForegroundService extends Service {
         return START_STICKY;
     }
 
+    private void updateWidgets() {
+        // Tüm widget türlerini güncelle
+        PrayerWidgetProvider.updateAllWidgets(this);
+        PrayerWidgetSmallProvider.updateAllWidgets(this);
+        PrayerWidgetStripProvider.updateAllWidgets(this);
+        PrayerWidgetVerticalProvider.updateAllWidgets(this);
+    }
+
     private void checkPrayerTime() {
         if (prayerTimes == null) return;
         
         SharedPreferences prefs = getSharedPreferences("PrayerWidgetPrefs", Context.MODE_PRIVATE);
         if (!prefs.getBoolean("full_screen_enabled", true)) return;
+
+        String settingsStr = prefs.getString("notification_settings", null);
+        JSONObject settings = null;
+        try {
+            if (settingsStr != null) settings = new JSONObject(settingsStr);
+        } catch (Exception e) { e.printStackTrace(); }
+
+        if (settings != null && !settings.optBoolean("enabled", true)) return;
 
         Calendar now = Calendar.getInstance();
         String current = String.format("%02d:%02d", now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE));
@@ -89,56 +127,90 @@ public class PrayerForegroundService extends Service {
             if (current.equals(pTime)) {
                 String dayKey = Calendar.getInstance().get(Calendar.DAY_OF_YEAR) + "_" + names[i];
                 if (!dayKey.equals(lastTriggeredPrayer)) {
-                    lastTriggeredPrayer = dayKey;
+                    boolean prayerEnabled = true;
+                    String soundId = "adhan1";
                     
-                    // 1) Ezan Çalmaya Başla
-                    playAdhan(names[i]);
-                    
-                    // 2) Tam Ekran Bildirimi Göster
-                    showFullScreenNotification(trNames[i], current);
+                    if (settings != null) {
+                        JSONObject pNotifs = settings.optJSONObject("prayerNotifications");
+                        if (pNotifs != null) {
+                            JSONObject config = pNotifs.optJSONObject(names[i]);
+                            if (config != null) {
+                                prayerEnabled = config.optBoolean("enabled", true);
+                                soundId = config.optString("soundId", "adhan1");
+                            }
+                        }
+                    }
+
+                    if (prayerEnabled) {
+                        lastTriggeredPrayer = dayKey;
+                        playAdhan(soundId);
+                        showFullScreenNotification(trNames[i], current);
+                    }
                 }
             }
         }
     }
 
-    private void playAdhan(String prayerKey) {
+    private void playAdhan(String soundId) {
         try {
-            if (mediaPlayer != null) {
-                mediaPlayer.stop();
-                mediaPlayer.release();
-            }
-
+            stopAdhan();
             mediaPlayer = new MediaPlayer();
             mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_ALARM)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build());
 
-            // res/raw içindeki adhan1.mp3 dosyasını kullanıyoruz
-            int resId = getResources().getIdentifier("adhan1", "raw", getPackageName());
-            
-            // Fallback: adhan1 yoksa notification1 kullan
-            if (resId == 0) {
-                resId = getResources().getIdentifier("notification1", "raw", getPackageName());
-            }
-
+            int resId = getResources().getIdentifier(soundId, "raw", getPackageName());
             if (resId != 0) {
                 mediaPlayer = MediaPlayer.create(this, resId);
-                mediaPlayer.setLooping(false);
-                mediaPlayer.start();
-                
-                // 5 dakika sonra otomatik durdur (ezan bitince)
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    if (mediaPlayer != null) {
-                        try { mediaPlayer.stop(); mediaPlayer.release(); mediaPlayer = null; } catch (Exception e) {}
-                    }
-                }, 300000);
+            } else {
+                File soundFile = new File(getFilesDir(), "sounds/" + soundId + ".mp3");
+                if (soundFile.exists()) {
+                    mediaPlayer.setDataSource(soundFile.getAbsolutePath());
+                    mediaPlayer.prepare();
+                } else {
+                    int defaultId = getResources().getIdentifier("adhan1", "raw", getPackageName());
+                    if (defaultId != 0) mediaPlayer = MediaPlayer.create(this, defaultId);
+                }
             }
 
+            if (mediaPlayer != null) {
+                mediaPlayer.setLooping(false);
+                mediaPlayer.start();
+                isAdhanPlaying = true;
+                if (sensorManager != null && accelerometer != null) {
+                    sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+                }
+                new Handler(Looper.getMainLooper()).postDelayed(() -> stopAdhan(), 300000);
+            }
         } catch (Exception e) {
             Log.e("PrayerService", "Adhan Player Error", e);
         }
     }
+
+    private void stopAdhan() {
+        isAdhanPlaying = false;
+        if (sensorManager != null) sensorManager.unregisterListener(this);
+        if (mediaPlayer != null) {
+            try {
+                if (mediaPlayer.isPlaying()) mediaPlayer.stop();
+                mediaPlayer.release();
+                mediaPlayer = null;
+            } catch (Exception e) { Log.e("PrayerService", "Error stopping adhan", e); }
+        }
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER && isAdhanPlaying) {
+            float z = event.values[2];
+            if (z < -8.5) {
+                stopAdhan();
+            }
+        }
+    }
+
+    @Override public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
     private void showFullScreenNotification(String name, String time) {
         try {
@@ -166,11 +238,8 @@ public class PrayerForegroundService extends Service {
 
             NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             if (nm != null) nm.notify(2000, b.build());
-            
             if (wl.isHeld()) wl.release();
-        } catch (Exception e) { 
-            Log.e("PrayerService", "Full Screen Notification Error", e); 
-        }
+        } catch (Exception e) { Log.e("PrayerService", "Full Screen Notification Error", e); }
     }
 
     private void updateNotification() {
@@ -229,7 +298,7 @@ public class PrayerForegroundService extends Service {
 
     @Override public void onDestroy() { 
         if (updateRunnable != null) handler.removeCallbacks(updateRunnable); 
-        if (mediaPlayer != null) { mediaPlayer.release(); mediaPlayer = null; }
+        stopAdhan();
         super.onDestroy(); 
     }
     @Nullable @Override public IBinder onBind(Intent intent) { return null; }

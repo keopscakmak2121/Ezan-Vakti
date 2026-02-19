@@ -9,7 +9,7 @@ const SetupWizard = ({ darkMode, onComplete }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
-  const totalSteps = 6;
+  const totalSteps = 7; // Bildirim ve Konum ayrıldığı için adım sayısı arttı
 
   const nextStep = () => { setStatusMsg(''); setStep(prev => prev + 1); };
   const showStatus = (msg, autoHide = true) => {
@@ -17,79 +17,85 @@ const SetupWizard = ({ darkMode, onComplete }) => {
     if (autoHide) setTimeout(() => setStatusMsg(''), 4000);
   };
 
-  // Uygulama ön plana geldiğinde (ayarlardan dönünce) izin durumunu kontrol et
+  // Uygulama ön plana geldiğinde (ayarlardan dönünce) izin durumlarını otomatik kontrol et
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const checkOnResume = App.addListener('appStateChange', async ({ isActive }) => {
       if (!isActive) return;
-      // Pil adımındaysa
-      if (step === 3) {
-        try {
-          // Pil izni kontrol — zaten verilmişse otomatik geç
-          await AppSettings.openBatteryOptimizationSettings().catch(() => {});
-          // Eğer popup gelmeden resolve olduysa izin zaten var
-        } catch (e) {}
-      }
+
+      try {
+        if (step === 2) { // Bildirim Kontrolü
+          const status = await LocalNotifications.checkPermissions();
+          if (status.display === 'granted') {
+            showStatus('✅ Bildirim izni algılandı');
+            setTimeout(nextStep, 1000);
+          }
+        } else if (step === 3) { // Konum Kontrolü
+          const status = await Geolocation.checkPermissions();
+          if (status.location === 'granted' || status.location === 'coarse') {
+            showStatus('✅ Konum izni algılandı');
+            setTimeout(nextStep, 1000);
+          }
+        } else if (step === 4) { // Pil Optimizasyonu (Check metodu olmadığı için sadece ayarı açıyoruz ama resume'da uyarı verebiliriz)
+             // Pil için kesin bir check API'si her cihazda yok, bu yüzden manuel geçişe izin veriyoruz
+        }
+      } catch (e) { console.error("Kontrol hatası:", e); }
     });
     return () => { checkOnResume.then(h => h.remove()); };
   }, [step]);
 
-  // 1. Bildirim + Konum birlikte (hızlı adım)
-  const requestPermissions = async () => {
+  // Adım 2: Bildirim İzni İsteme
+  const requestNotifPermission = async () => {
     setLoading(true);
-    let notifOk = false, locOk = false;
-
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const notif = await LocalNotifications.requestPermissions();
-        notifOk = notif.display === 'granted';
-      } catch (e) { notifOk = true; }
-
-      try {
-        const loc = await Geolocation.requestPermissions();
-        locOk = loc.location === 'granted';
-      } catch (e) { locOk = true; }
-    } else {
-      notifOk = true; locOk = true;
-    }
-
-    if (notifOk && locOk) showStatus('✅ Bildirim ve konum izni verildi');
-    else if (notifOk) showStatus('✅ Bildirim izni verildi, ⚠️ Konum izni verilmedi');
-    else if (locOk) showStatus('⚠️ Bildirim izni verilmedi, ✅ Konum izni verildi');
-    else showStatus('⚠️ İzinler verilmedi — Ayarlardan verebilirsiniz');
-
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const res = await LocalNotifications.requestPermissions();
+        if (res.display === 'granted') {
+          showStatus('✅ Bildirim izni verildi');
+          setTimeout(nextStep, 1000);
+        } else {
+          showStatus('⚠️ Bildirim izni reddedildi. Ayarlardan açmalısınız.');
+        }
+      } else {
+        nextStep();
+      }
+    } catch (e) { showStatus('⚠️ Bir hata oluştu'); }
     setLoading(false);
-    setTimeout(nextStep, 1200);
   };
 
-  // 3. Pil Optimizasyonu
+  // Adım 3: Konum İzni İsteme
+  const requestLocPermission = async () => {
+    setLoading(true);
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const res = await Geolocation.requestPermissions();
+        if (res.location === 'granted' || res.location === 'coarse') {
+          showStatus('✅ Konum izni verildi');
+          setTimeout(nextStep, 1000);
+        } else {
+          showStatus('⚠️ Konum izni reddedildi. Ayarlardan açmalısınız.');
+        }
+      } else {
+        nextStep();
+      }
+    } catch (e) { showStatus('⚠️ Bir hata oluştu'); }
+    setLoading(false);
+  };
+
+  // Diğer ayar açma fonksiyonları
   const openBatterySettings = async () => {
-    try {
-      await AppSettings.openBatteryOptimizationSettings();
-      showStatus('✅ Pil ayarı açıldı — İzin verdikten sonra geri dönün', false);
-    } catch (e) {
-      showStatus('⚠️ ' + (e.message || 'Pil ayarları açılamadı'));
-    }
+    try { await AppSettings.openBatteryOptimizationSettings(); showStatus('✅ Ayarı yaptıktan sonra geri dönün', false); }
+    catch (e) { showStatus('⚠️ Ayarlar açılamadı'); }
   };
 
-  // 4. Üstte Gösterme
   const openOverlaySettings = async () => {
-    try {
-      await AppSettings.openOverlaySettings();
-      showStatus('✅ Ayar açıldı — İzni aktif edip geri dönün', false);
-    } catch (e) {
-      showStatus('⚠️ ' + (e.message || 'Ayarlar açılamadı'));
-    }
+    try { await AppSettings.openOverlaySettings(); showStatus('✅ Ayarı yaptıktan sonra geri dönün', false); }
+    catch (e) { showStatus('⚠️ Ayarlar açılamadı'); }
   };
 
-  // 5. Kesin Alarm
   const openAlarmSettings = async () => {
-    try {
-      await AppSettings.openExactAlarmSettings();
-      showStatus('✅ Ayar açıldı — İzni aktif edip geri dönün', false);
-    } catch (e) {
-      showStatus('⚠️ ' + (e.message || 'Alarm ayarları açılamadı'));
-    }
+    try { await AppSettings.openExactAlarmSettings(); showStatus('✅ Ayarı yaptıktan sonra geri dönün', false); }
+    catch (e) { showStatus('⚠️ Ayarlar açılamadı'); }
   };
 
   const finishSetup = () => {
@@ -150,7 +156,6 @@ const SetupWizard = ({ darkMode, onComplete }) => {
 
       {statusMsg && <div style={s.status}>{statusMsg}</div>}
 
-      {/* ADIM 1 — Hoşgeldin */}
       {step === 1 && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={s.icon}>🕌</div>
@@ -160,74 +165,76 @@ const SetupWizard = ({ darkMode, onComplete }) => {
         </div>
       )}
 
-      {/* ADIM 2 — Bildirim + Konum (birleştirildi) */}
       {step === 2 && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={s.icon}>🔔📍</div>
-          <h1 style={s.title}>Bildirim ve Konum İzni</h1>
+          <div style={s.icon}>🔔</div>
+          <h1 style={s.title}>Bildirim İzni</h1>
           <div style={s.guideBox}>
-            <b>🔔 Bildirim:</b> Ezan sesli uyarıları için<br />
-            <b>📍 Konum:</b> Doğru namaz vakitleri için
+            Ezan vakitlerinde sesli uyarı alabilmeniz için bildirim izni vermeniz gerekmektedir.
           </div>
-          <button style={s.mainBtn} onClick={requestPermissions} disabled={loading}>
-            {loading ? 'İzinler isteniyor...' : 'İzinleri Ver'}
+          <button style={s.mainBtn} onClick={requestNotifPermission} disabled={loading}>
+            {loading ? 'İsteniyor...' : 'Bildirim İzni Ver'}
           </button>
           <button style={s.secondBtn} onClick={nextStep}>Atla →</button>
         </div>
       )}
 
-      {/* ADIM 3 — Pil Optimizasyonu */}
       {step === 3 && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={s.icon}>📍</div>
+          <h1 style={s.title}>Konum İzni</h1>
+          <div style={s.guideBox}>
+            Namaz vakitlerinin bulunduğunuz konuma göre milimetrik hesaplanması için gereklidir.
+          </div>
+          <button style={s.mainBtn} onClick={requestLocPermission} disabled={loading}>
+            {loading ? 'İsteniyor...' : 'Konum İzni Ver'}
+          </button>
+          <button style={s.secondBtn} onClick={nextStep}>Atla →</button>
+        </div>
+      )}
+
+      {step === 4 && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={s.icon}>🔋</div>
           <h1 style={s.title}>Pil Optimizasyonu</h1>
           <div style={s.guideBox}>
-            <b>⚠️ En Önemli Adım!</b><br /><br />
-            Android uygulamayı arka planda kapatabilir. Açılacak pencerede:<br /><br />
-            <b>→ "Kısıtlama Yok"</b> veya <b>"Optimize Etme"</b> seçin.<br /><br />
-            <span style={{ fontSize: '12px', opacity: 0.7 }}>Bu ayar olmadan bildirimler gelmeyebilir.</span>
+            <b>⚠️ Kritik Adım!</b><br /><br />
+            Android'in ezan sesini arka planda kesmemesi için <b>"Kısıtlama Yok"</b> seçeneğini işaretleyin.
           </div>
           <button style={s.mainBtn} onClick={openBatterySettings}>Pil Ayarını Aç</button>
           <button style={s.secondBtn} onClick={nextStep}>İleri →</button>
         </div>
       )}
 
-      {/* ADIM 4 — Üstte Gösterme */}
-      {step === 4 && (
+      {step === 5 && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={s.icon}>📱</div>
-          <h1 style={s.title}>Üstte Gösterme İzni</h1>
+          <h1 style={s.title}>Üstte Gösterme</h1>
           <div style={s.guideBox}>
-            <b>Neden gerekli?</b><br />
-            Ezan vaktinde kilit ekranında tam ekran bildirim gösterebilmek için.<br /><br />
-            <b>→ Açılacak sayfada izni AKTİF edin.</b>
+            Ezan vaktinde kilit ekranında tam ekran görsel uyarı gösterebilmek için bu izni aktif edin.
           </div>
           <button style={s.mainBtn} onClick={openOverlaySettings}>Ayarı Aç</button>
           <button style={s.secondBtn} onClick={nextStep}>İleri →</button>
         </div>
       )}
 
-      {/* ADIM 5 — Kesin Alarm */}
-      {step === 5 && (
+      {step === 6 && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={s.icon}>⏰</div>
           <h1 style={s.title}>Kesin Alarm İzni</h1>
           <div style={s.guideBox}>
-            <b>Neden gerekli?</b><br />
-            Bildirimlerin tam vaktinde gelmesi için.<br /><br />
-            <b>→ "Alarm ve hatırlatıcılar" iznini AKTİF edin.</b>
+            Bildirimlerin saniyesi saniyesine tam vaktinde gelmesi için bu ayarı aktif edin.
           </div>
           <button style={s.mainBtn} onClick={openAlarmSettings}>Ayarı Aç</button>
           <button style={s.secondBtn} onClick={nextStep}>İleri →</button>
         </div>
       )}
 
-      {/* ADIM 6 — Tamamlandı */}
-      {step === 6 && (
+      {step === 7 && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={s.icon}>✅</div>
           <h1 style={s.title}>Her Şey Hazır!</h1>
-          <p style={s.desc}>Tüm izinler ayarlandı. Ezan bildirimleri artık doğru çalışacaktır.</p>
+          <p style={s.desc}>Kurulum tamamlandı. Artık huzurla kullanabilirsiniz.</p>
           <button style={s.mainBtn} onClick={finishSetup}>Uygulamayı Başlat 🕌</button>
         </div>
       )}

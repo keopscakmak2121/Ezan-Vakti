@@ -1,6 +1,7 @@
 
 import { registerPlugin } from '@capacitor/core';
 import { getStoredPrayerTimes } from './storage.js';
+import { getNotificationSettings } from './notificationStorage.js';
 
 const PrayerPlugin = registerPlugin('PrayerPlugin');
 
@@ -10,6 +11,7 @@ export const showOngoingNotification = async (prayerTimes) => {
     
     const stored = getStoredPrayerTimes();
     const locationName = stored?.locationName || 'Konum';
+    const settings = getNotificationSettings();
 
     // Sadece gerekli vakitleri gönderelim
     const timings = {
@@ -23,7 +25,8 @@ export const showOngoingNotification = async (prayerTimes) => {
 
     await PrayerPlugin.start({
       prayerTimes: timings,
-      locationName: locationName
+      locationName: locationName,
+      settings: settings // Tüm bildirim ayarlarını gönderiyoruz (Ses seçimi vb.)
     });
   } catch (error) {
     console.error('Kalıcı bildirim başlatılamadı:', error);
