@@ -1,20 +1,38 @@
-// src/utils/tafsirStorage.js - spa5k/tafsir_api (RAW GITHUB URL - En Kararlı)
+// src/utils/tafsirStorage.js - Quran.com API v4 (Türkçe tefsir destekli)
 
 const DB_NAME = 'quranTafsirDB';
-const DB_VERSION = 14; // Versiyonu artırarak eski hatalı verileri siliyoruz
+const DB_VERSION = 15;
 const STORE_NAME = 'tafsirFiles';
 
-// GitHub (spa5k/tafsir_api) üzerindeki Türkçe tefsir yolları
+// Quran.com API v4 üzerindeki tefsirler
 export const tafsirs = [
   {
-    id: 'tr-tafsir-elmalili-hamdi-yazir',
-    name: 'Elmalılı Hamdi Yazır',
-    author: 'Elmalılı'
+    id: 'qurancom-ibn-kathir',
+    name: 'İbn Kesir Tefsiri (İngilizce)',
+    author: 'Hafız İbn Kesir',
+    apiId: 169,
+    language: 'en'
   },
   {
-    id: 'tr-tafsir-diyanet-isleri-baskanligi',
-    name: 'Diyanet İşleri',
-    author: 'Diyanet'
+    id: 'qurancom-muyassar',
+    name: 'Tefsir Müyesser (Arapça)',
+    author: 'Kral Fahd Kompleksi',
+    apiId: 16,
+    language: 'ar'
+  },
+  {
+    id: 'qurancom-jalalayn',
+    name: 'Celaleyn Tefsiri (İngilizce)',
+    author: 'Celaleyn',
+    apiId: 74,
+    language: 'en'
+  },
+  {
+    id: 'qurancom-saddi',
+    name: 'Saddi Tefsiri (Arapça)',
+    author: 'Saddi',
+    apiId: 91,
+    language: 'ar'
   }
 ];
 
@@ -65,34 +83,56 @@ export const fetchTafsir = async (surahNumber, ayahNumber, tafsirId) => {
   const offlineText = await getOfflineTafsir(surahNumber, ayahNumber, tafsirId);
   if (offlineText) return offlineText;
 
-  // 2. RAW GITHUB URL üzerinden çek (Daha Güvenilir)
+  const tafsirInfo = tafsirs.find(t => t.id === tafsirId);
+  if (!tafsirInfo) return 'Tefsir bulunamadı.';
+
+  // 2. Quran.com API v4
   try {
-    const url = `https://raw.githubusercontent.com/spa5k/tafsir_api/main/tafsir/${tafsirId}/${surahNumber}/${ayahNumber}.json`;
+    const verseKey = `${surahNumber}:${ayahNumber}`;
+    const url = `https://api.quran.com/api/v4/tafsirs/${tafsirInfo.apiId}/by_ayah/${verseKey}`;
     
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Dosya bulunamadı veya ağ hatası');
+    if (!res.ok) throw new Error('API hatası: ' + res.status);
     
     const data = await res.json();
-    const content = data.text;
+    const tafsirData = data.tafsir;
 
-    if (content) {
+    if (tafsirData && tafsirData.text) {
+      const content = tafsirData.text;
       await saveTafsirOffline(surahNumber, ayahNumber, tafsirId, content);
       return content;
     }
   } catch (e) {
-    console.error("Tefsir çekme hatası:", e);
+    console.error("Quran.com API tefsir hatası:", e);
   }
 
-  return 'Tefsir yüklenemedi. Lütfen internetinizi kontrol edin.';
+  // 3. Fallback: cdn.jsdelivr.net spa5k API
+  try {
+    const fallbackSlug = tafsirInfo.language === 'ar' ? 'ar-tafsir-muyassar' : 'en-tafisr-ibn-kathir';
+    const fallbackUrl = `https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/${fallbackSlug}/${surahNumber}/${ayahNumber}.json`;
+    
+    const res2 = await fetch(fallbackUrl);
+    if (res2.ok) {
+      const data2 = await res2.json();
+      if (data2.text) {
+        await saveTafsirOffline(surahNumber, ayahNumber, tafsirId, data2.text);
+        return data2.text;
+      }
+    }
+  } catch (e2) {
+    console.error("Fallback tefsir hatası:", e2);
+  }
+
+  return 'Tefsir yüklenemedi. Lütfen internet bağlantınızı kontrol edin.';
 };
 
-// İndirme ve diğer yardımcı fonksiyonlar aynı kalabilir
 export const downloadSurahTafsir = async (surahNumber, totalAyahs, tafsirId, onProgress) => {
   let successCount = 0;
   for (let i = 1; i <= totalAyahs; i++) {
     const text = await fetchTafsir(surahNumber, i, tafsirId);
     if (text && !text.includes('yüklenemedi')) successCount++;
     if (onProgress) onProgress(Math.round((i / totalAyahs) * 100));
+    await new Promise(r => setTimeout(r, 200));
   }
   return successCount > 0;
 };
