@@ -1,32 +1,19 @@
 // src/utils/tafsirStorage.js - Diyanet Kur'an Yolu Tefsiri (TÜRKÇE)
+// CapacitorHttp ile CORS sorunu aşılıyor
+
+import { CapacitorHttp } from '@capacitor/core';
 
 const DB_NAME = 'quranTafsirDB';
-const DB_VERSION = 16;
+const DB_VERSION = 17;
 const STORE_NAME = 'tafsirFiles';
 
-// Sure ayet sayıları (Fatiha=7, Bakara=286, ...)
+// Sure ayet sayıları
 const SURAH_AYAH_COUNTS = [
   7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,
   112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,
   89,59,37,35,38,88,52,45,30,49,49,46,29,31,34,53,46,25,34,54,73,19,11,
   110,46,73,69,44,55,13,37,43,49,39,57,34,34,28,30,31,43,39,29,45,33,34,
   30,30,42,26,29,37,18,10,28,18,20,15,21,11,8,5,8,8,19,5,8,5,6,3
-];
-
-// Sure isimleri (Diyanet URL formatında)
-const SURAH_NAMES_URL = [
-  "Fatiha","Bakara","Al-i-Imran","Nisa","Maide","Enam","Araf","Enfal","Tevbe","Yunus",
-  "Hud","Yusuf","Rad","Ibrahim","Hicr","Nahl","Isra","Kehf","Meryem","Taha",
-  "Enbiya","Hac","Muminun","Nur","Furkan","Suara","Neml","Kasas","Ankebut","Rum",
-  "Lokman","Secde","Ahzab","Sebe","Fatir","Yasin","Saffat","Sad","Zumer","Mumin",
-  "Fussilet","Sura","Zuhruf","Duhan","Casiye","Ahkaf","Muhammed","Fetih","Hucurat","Kaf",
-  "Zariyat","Tur","Necm","Kamer","Rahman","Vakia","Hadid","Mucadele","Hasr","Mumtehine",
-  "Saf","Cuma","Munafikun","Tegabun","Talak","Tahrim","Mulk","Kalem","Hakka","Mearic",
-  "Nuh","Cin","Muzzemmil","Muddessir","Kiyame","Insan","Murselat","Nebe","Naziat","Abese",
-  "Tekvir","Infitar","Mutaffifin","Insikak","Buruc","Tarik","Ala","Gasiye","Fecr","Beled",
-  "Sems","Leyl","Duha","Insirah","Tin","Alak","Kadr","Beyyine","Zilzal","Adiyat",
-  "Karia","Tekasur","Asr","Humeze","Fil","Kureys","Maun","Kevser","Kafirun","Nasr",
-  "Tebbet","Ihlas","Felak","Nas"
 ];
 
 export const tafsirs = [
@@ -38,7 +25,7 @@ export const tafsirs = [
   }
 ];
 
-// Global ayet ID hesapla (Diyanet URL'lerinde kullanılır)
+// Global ayet ID hesapla
 const getGlobalAyahId = (surahNumber, ayahNumber) => {
   let id = 0;
   for (let i = 0; i < surahNumber - 1; i++) {
@@ -91,34 +78,36 @@ export const saveTafsirOffline = async (surah, ayah, tafsirId, text) => {
 
 // HTML'den tefsir metnini çıkar
 const extractTafsirFromHTML = (html) => {
-  // <h2>Tefsir</h2> bölümünden sonrasını al
-  const tefsirMatch = html.match(/<h2[^>]*>\s*Tefsir\s*<\/h2>([\s\S]*?)(?=<h3|<div class|<footer|Kaynak:|$)/i);
-  if (tefsirMatch) {
-    let text = tefsirMatch[1];
-    // HTML tag'lerini temizle ama paragrafları koru
-    text = text.replace(/<\/p>/gi, '\n\n');
-    text = text.replace(/<br\s*\/?>/gi, '\n');
-    text = text.replace(/<[^>]+>/g, '');
-    text = text.replace(/&nbsp;/g, ' ');
-    text = text.replace(/&amp;/g, '&');
-    text = text.replace(/&lt;/g, '<');
-    text = text.replace(/&gt;/g, '>');
-    text = text.replace(/&#39;/g, "'");
-    text = text.replace(/&quot;/g, '"');
-    text = text.replace(/\n{3,}/g, '\n\n');
-    return text.trim();
-  }
-  
-  // Alternatif: Meal ve Tefsir arasını dene
-  const altMatch = html.match(/Tefsir[\s\S]*?<\/h2>([\s\S]*?)(?:Kaynak|<footer|<div class="ayetler")/i);
-  if (altMatch) {
-    let text = altMatch[1];
-    text = text.replace(/<\/p>/gi, '\n\n');
-    text = text.replace(/<br\s*\/?>/gi, '\n');
-    text = text.replace(/<[^>]+>/g, '');
-    text = text.replace(/&[a-z]+;/gi, ' ');
-    text = text.replace(/\n{3,}/g, '\n\n');
-    return text.trim();
+  // Tefsir bölümünü bul (birden fazla pattern dene)
+  const patterns = [
+    /## Tefsir\s*\n([\s\S]*?)(?:\*\*\*Kaynak|### Ayetler|$)/,
+    /<h2[^>]*>\s*Tefsir\s*<\/h2>([\s\S]*?)(?:<div class="ayetler"|Kaynak:|<footer|<h3|$)/i,
+    /Tefsir<\/h2>([\s\S]*?)(?:Kaynak|class="ayetler"|<footer)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      let text = match[1];
+      
+      // HTML/Markdown temizle
+      text = text.replace(/<\/p>/gi, '\n\n');
+      text = text.replace(/<br\s*\/?>/gi, '\n');
+      text = text.replace(/<[^>]+>/g, '');
+      text = text.replace(/\*{1,3}/g, '');
+      text = text.replace(/#{1,6}\s*/g, '');
+      text = text.replace(/&nbsp;/g, ' ');
+      text = text.replace(/&amp;/g, '&');
+      text = text.replace(/&lt;/g, '<');
+      text = text.replace(/&gt;/g, '>');
+      text = text.replace(/&#39;/g, "'");
+      text = text.replace(/&quot;/g, '"');
+      text = text.replace(/\\N/g, '');
+      text = text.replace(/\n{3,}/g, '\n\n');
+      text = text.trim();
+      
+      if (text.length > 30) return text;
+    }
   }
   
   return null;
@@ -129,24 +118,44 @@ export const fetchTafsir = async (surahNumber, ayahNumber, tafsirId) => {
   const offlineText = await getOfflineTafsir(surahNumber, ayahNumber, tafsirId);
   if (offlineText) return offlineText;
 
-  // 2. Diyanet sitesinden çek
+  // 2. Diyanet URL oluştur
+  // Not: Sure ismi kısmı önemsiz, Diyanet global ayet ID'ye göre yönlendiriyor
+  const globalId = getGlobalAyahId(surahNumber, ayahNumber);
+  const url = `https://kuran.diyanet.gov.tr/tefsir/sure-suresi/${globalId}/${ayahNumber}-ayet-tefsiri`;
+
+  console.log('Tefsir URL:', url, '(sure:', surahNumber, 'ayet:', ayahNumber, ')');
+
+  // 3. CapacitorHttp (native, CORS yok)
   try {
-    const globalId = getGlobalAyahId(surahNumber, ayahNumber);
-    const surahName = SURAH_NAMES_URL[surahNumber - 1] || 'Fatiha';
-    const url = `https://kuran.diyanet.gov.tr/tefsir/${surahName}-suresi/${globalId}/${ayahNumber}-ayet-tefsiri`;
+    const response = await CapacitorHttp.get({
+      url: url,
+      headers: { 'Accept': 'text/html,application/xhtml+xml' }
+    });
     
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Diyanet API hatası: ' + res.status);
-    
-    const html = await res.text();
-    const tafsirText = extractTafsirFromHTML(html);
-    
-    if (tafsirText && tafsirText.length > 20) {
-      await saveTafsirOffline(surahNumber, ayahNumber, tafsirId, tafsirText);
-      return tafsirText;
+    if (response.status === 200 && response.data) {
+      const tafsirText = extractTafsirFromHTML(response.data);
+      if (tafsirText) {
+        await saveTafsirOffline(surahNumber, ayahNumber, tafsirId, tafsirText);
+        return tafsirText;
+      }
     }
   } catch (e) {
-    console.error("Diyanet tefsir hatası:", e);
+    console.error('CapacitorHttp tefsir hatası:', e);
+  }
+
+  // 4. Fallback: Normal fetch (tarayıcıda test için)
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      const html = await res.text();
+      const tafsirText = extractTafsirFromHTML(html);
+      if (tafsirText) {
+        await saveTafsirOffline(surahNumber, ayahNumber, tafsirId, tafsirText);
+        return tafsirText;
+      }
+    }
+  } catch (e) {
+    console.error('Fetch tefsir hatası:', e);
   }
 
   return 'Tefsir yüklenemedi. Lütfen internet bağlantınızı kontrol edin.';
