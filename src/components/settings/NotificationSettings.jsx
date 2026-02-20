@@ -403,13 +403,6 @@ const NotificationSettings = ({
                       {SOUND_OPTIONS.notification.filter(s => s.local).map(sound => renderSoundCard(sound, 'notification'))}
                     </div>
 
-                    <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: 'bold', marginBottom: '8px' }}>
-                      ☁️ İndirilebilir Sesler
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {SOUND_OPTIONS.notification.filter(s => !s.local && s.id !== 'default').map(sound => renderSoundCard(sound, 'notification'))}
-                    </div>
-
                     {/* Sistem Varsayılanı */}
                     <div style={{ marginTop: '10px' }}>
                       {renderSoundCard(SOUND_OPTIONS.notification.find(s => s.id === 'default'), 'notification')}

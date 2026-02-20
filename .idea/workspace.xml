@@ -6,14 +6,17 @@
   <component name="ChangeListManager">
     <list default="true" id="b6ce7708-097c-4103-b282-8b57b8ef81e9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/index-D7IiMICx.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-CAWos02i.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-CCzOEQ_W.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-Dcfd2h0z.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/assets/web-DhcxYlop.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/capacitor.build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/capacitor.build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/capacitor.settings.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/capacitor.settings.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/index-BomCV1gL.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/index-T5k-hgvO.css" beforeDir="false" afterPath="$PROJECT_DIR$/dist/assets/index-T5k-hgvO.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-B01vvdiq.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-CxtPi4F6.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-DT99LFqc.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/assets/web-rmhjmi50.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/dist/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/Settings.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Settings.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/notificationService.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/notificationService.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/settings/NotificationSettings.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/settings/NotificationSettings.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/notificationStorage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/notificationStorage.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

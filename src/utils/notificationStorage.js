@@ -45,11 +45,6 @@ export const SOUND_OPTIONS = {
     { id: 'notification2', name: 'Zil Sesi', file: 'notification2.mp3', local: true },
     { id: 'notification3', name: 'Dijital Bip', file: 'notification3.mp3', local: true },
     { id: 'notification4', name: 'Yumuşak Ton', file: 'notification4.mp3', local: true },
-    // ── İndirilebilir Bildirim Sesleri (Pixabay) ──
-    { id: 'notif_beep1', name: 'Kısa Bip', file: 'notif_beep1.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a7315b.mp3' },
-    { id: 'notif_chime', name: 'Modern Uyarı', file: 'notif_chime.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/03/15/audio_7302484f98.mp3' },
-    { id: 'notif_soft', name: 'Yumuşak Melodi', file: 'notif_soft.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2021/08/04/audio_03d98a2879.mp3' },
-    { id: 'notif_bird', name: 'Kuş Sesi', file: 'notif_bird.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2021/11/25/audio_91b32e01fa.mp3' },
     { id: 'default', name: 'Sistem Varsayılanı', file: 'default', local: true }
   ]
 };
@@ -106,7 +101,7 @@ export const isSoundDownloaded = (soundId) => {
   return downloaded.includes(soundId);
 };
 
-// İndirilen sesin native URI'sini döndür
+// İndirilen sesın native URI'sini döndür
 export const getDownloadedSoundUri = async (soundId, soundType) => {
   try {
     const soundList = SOUND_OPTIONS[soundType] || [];
