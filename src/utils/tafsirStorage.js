@@ -1,40 +1,51 @@
-// src/utils/tafsirStorage.js - Quran.com API v4 (Türkçe tefsir destekli)
+// src/utils/tafsirStorage.js - Diyanet Kur'an Yolu Tefsiri (TÜRKÇE)
 
 const DB_NAME = 'quranTafsirDB';
-const DB_VERSION = 15;
+const DB_VERSION = 16;
 const STORE_NAME = 'tafsirFiles';
 
-// Quran.com API v4 üzerindeki tefsirler
+// Sure ayet sayıları (Fatiha=7, Bakara=286, ...)
+const SURAH_AYAH_COUNTS = [
+  7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,
+  112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,
+  89,59,37,35,38,88,52,45,30,49,49,46,29,31,34,53,46,25,34,54,73,19,11,
+  110,46,73,69,44,55,13,37,43,49,39,57,34,34,28,30,31,43,39,29,45,33,34,
+  30,30,42,26,29,37,18,10,28,18,20,15,21,11,8,5,8,8,19,5,8,5,6,3
+];
+
+// Sure isimleri (Diyanet URL formatında)
+const SURAH_NAMES_URL = [
+  "Fatiha","Bakara","Al-i-Imran","Nisa","Maide","Enam","Araf","Enfal","Tevbe","Yunus",
+  "Hud","Yusuf","Rad","Ibrahim","Hicr","Nahl","Isra","Kehf","Meryem","Taha",
+  "Enbiya","Hac","Muminun","Nur","Furkan","Suara","Neml","Kasas","Ankebut","Rum",
+  "Lokman","Secde","Ahzab","Sebe","Fatir","Yasin","Saffat","Sad","Zumer","Mumin",
+  "Fussilet","Sura","Zuhruf","Duhan","Casiye","Ahkaf","Muhammed","Fetih","Hucurat","Kaf",
+  "Zariyat","Tur","Necm","Kamer","Rahman","Vakia","Hadid","Mucadele","Hasr","Mumtehine",
+  "Saf","Cuma","Munafikun","Tegabun","Talak","Tahrim","Mulk","Kalem","Hakka","Mearic",
+  "Nuh","Cin","Muzzemmil","Muddessir","Kiyame","Insan","Murselat","Nebe","Naziat","Abese",
+  "Tekvir","Infitar","Mutaffifin","Insikak","Buruc","Tarik","Ala","Gasiye","Fecr","Beled",
+  "Sems","Leyl","Duha","Insirah","Tin","Alak","Kadr","Beyyine","Zilzal","Adiyat",
+  "Karia","Tekasur","Asr","Humeze","Fil","Kureys","Maun","Kevser","Kafirun","Nasr",
+  "Tebbet","Ihlas","Felak","Nas"
+];
+
 export const tafsirs = [
   {
-    id: 'qurancom-ibn-kathir',
-    name: 'İbn Kesir Tefsiri (İngilizce)',
-    author: 'Hafız İbn Kesir',
-    apiId: 169,
-    language: 'en'
-  },
-  {
-    id: 'qurancom-muyassar',
-    name: 'Tefsir Müyesser (Arapça)',
-    author: 'Kral Fahd Kompleksi',
-    apiId: 16,
-    language: 'ar'
-  },
-  {
-    id: 'qurancom-jalalayn',
-    name: 'Celaleyn Tefsiri (İngilizce)',
-    author: 'Celaleyn',
-    apiId: 74,
-    language: 'en'
-  },
-  {
-    id: 'qurancom-saddi',
-    name: 'Saddi Tefsiri (Arapça)',
-    author: 'Saddi',
-    apiId: 91,
-    language: 'ar'
+    id: 'diyanet-kuran-yolu',
+    name: "Kur'an Yolu Tefsiri (Diyanet)",
+    author: 'Diyanet İşleri Başkanlığı',
+    language: 'tr'
   }
 ];
+
+// Global ayet ID hesapla (Diyanet URL'lerinde kullanılır)
+const getGlobalAyahId = (surahNumber, ayahNumber) => {
+  let id = 0;
+  for (let i = 0; i < surahNumber - 1; i++) {
+    id += SURAH_AYAH_COUNTS[i];
+  }
+  return id + ayahNumber;
+};
 
 const initDB = () => {
   return new Promise((resolve, reject) => {
@@ -56,13 +67,13 @@ const makeKey = (tafsirId, surah, ayah) => `${tafsirId}:${surah}-${ayah}`;
 export const getOfflineTafsir = async (surah, ayah, tafsirId) => {
   try {
     const db = await initDB();
-    const transaction = db.transaction([STORE_NAME], 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
+    const tx = db.transaction([STORE_NAME], 'readonly');
+    const store = tx.objectStore(STORE_NAME);
     const key = makeKey(tafsirId, surah, ayah);
     return new Promise((resolve) => {
-      const request = store.get(key);
-      request.onsuccess = () => resolve(request.result?.text || null);
-      request.onerror = () => resolve(null);
+      const req = store.get(key);
+      req.onsuccess = () => resolve(req.result?.text || null);
+      req.onerror = () => resolve(null);
     });
   } catch (e) { return null; }
 };
@@ -70,12 +81,47 @@ export const getOfflineTafsir = async (surah, ayah, tafsirId) => {
 export const saveTafsirOffline = async (surah, ayah, tafsirId, text) => {
   try {
     const db = await initDB();
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
+    const tx = db.transaction([STORE_NAME], 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
     const key = makeKey(tafsirId, surah, ayah);
-    await store.put({ id: key, tafsirId, surahNumber: surah, ayahNumber: ayah, text, savedAt: new Date().toISOString() });
+    store.put({ id: key, tafsirId, surahNumber: surah, ayahNumber: ayah, text, savedAt: new Date().toISOString() });
     return true;
   } catch (e) { return false; }
+};
+
+// HTML'den tefsir metnini çıkar
+const extractTafsirFromHTML = (html) => {
+  // <h2>Tefsir</h2> bölümünden sonrasını al
+  const tefsirMatch = html.match(/<h2[^>]*>\s*Tefsir\s*<\/h2>([\s\S]*?)(?=<h3|<div class|<footer|Kaynak:|$)/i);
+  if (tefsirMatch) {
+    let text = tefsirMatch[1];
+    // HTML tag'lerini temizle ama paragrafları koru
+    text = text.replace(/<\/p>/gi, '\n\n');
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+    text = text.replace(/<[^>]+>/g, '');
+    text = text.replace(/&nbsp;/g, ' ');
+    text = text.replace(/&amp;/g, '&');
+    text = text.replace(/&lt;/g, '<');
+    text = text.replace(/&gt;/g, '>');
+    text = text.replace(/&#39;/g, "'");
+    text = text.replace(/&quot;/g, '"');
+    text = text.replace(/\n{3,}/g, '\n\n');
+    return text.trim();
+  }
+  
+  // Alternatif: Meal ve Tefsir arasını dene
+  const altMatch = html.match(/Tefsir[\s\S]*?<\/h2>([\s\S]*?)(?:Kaynak|<footer|<div class="ayetler")/i);
+  if (altMatch) {
+    let text = altMatch[1];
+    text = text.replace(/<\/p>/gi, '\n\n');
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+    text = text.replace(/<[^>]+>/g, '');
+    text = text.replace(/&[a-z]+;/gi, ' ');
+    text = text.replace(/\n{3,}/g, '\n\n');
+    return text.trim();
+  }
+  
+  return null;
 };
 
 export const fetchTafsir = async (surahNumber, ayahNumber, tafsirId) => {
@@ -83,44 +129,24 @@ export const fetchTafsir = async (surahNumber, ayahNumber, tafsirId) => {
   const offlineText = await getOfflineTafsir(surahNumber, ayahNumber, tafsirId);
   if (offlineText) return offlineText;
 
-  const tafsirInfo = tafsirs.find(t => t.id === tafsirId);
-  if (!tafsirInfo) return 'Tefsir bulunamadı.';
-
-  // 2. Quran.com API v4
+  // 2. Diyanet sitesinden çek
   try {
-    const verseKey = `${surahNumber}:${ayahNumber}`;
-    const url = `https://api.quran.com/api/v4/tafsirs/${tafsirInfo.apiId}/by_ayah/${verseKey}`;
+    const globalId = getGlobalAyahId(surahNumber, ayahNumber);
+    const surahName = SURAH_NAMES_URL[surahNumber - 1] || 'Fatiha';
+    const url = `https://kuran.diyanet.gov.tr/tefsir/${surahName}-suresi/${globalId}/${ayahNumber}-ayet-tefsiri`;
     
     const res = await fetch(url);
-    if (!res.ok) throw new Error('API hatası: ' + res.status);
+    if (!res.ok) throw new Error('Diyanet API hatası: ' + res.status);
     
-    const data = await res.json();
-    const tafsirData = data.tafsir;
-
-    if (tafsirData && tafsirData.text) {
-      const content = tafsirData.text;
-      await saveTafsirOffline(surahNumber, ayahNumber, tafsirId, content);
-      return content;
+    const html = await res.text();
+    const tafsirText = extractTafsirFromHTML(html);
+    
+    if (tafsirText && tafsirText.length > 20) {
+      await saveTafsirOffline(surahNumber, ayahNumber, tafsirId, tafsirText);
+      return tafsirText;
     }
   } catch (e) {
-    console.error("Quran.com API tefsir hatası:", e);
-  }
-
-  // 3. Fallback: cdn.jsdelivr.net spa5k API
-  try {
-    const fallbackSlug = tafsirInfo.language === 'ar' ? 'ar-tafsir-muyassar' : 'en-tafisr-ibn-kathir';
-    const fallbackUrl = `https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/${fallbackSlug}/${surahNumber}/${ayahNumber}.json`;
-    
-    const res2 = await fetch(fallbackUrl);
-    if (res2.ok) {
-      const data2 = await res2.json();
-      if (data2.text) {
-        await saveTafsirOffline(surahNumber, ayahNumber, tafsirId, data2.text);
-        return data2.text;
-      }
-    }
-  } catch (e2) {
-    console.error("Fallback tefsir hatası:", e2);
+    console.error("Diyanet tefsir hatası:", e);
   }
 
   return 'Tefsir yüklenemedi. Lütfen internet bağlantınızı kontrol edin.';
@@ -132,7 +158,7 @@ export const downloadSurahTafsir = async (surahNumber, totalAyahs, tafsirId, onP
     const text = await fetchTafsir(surahNumber, i, tafsirId);
     if (text && !text.includes('yüklenemedi')) successCount++;
     if (onProgress) onProgress(Math.round((i / totalAyahs) * 100));
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 300));
   }
   return successCount > 0;
 };
@@ -140,13 +166,13 @@ export const downloadSurahTafsir = async (surahNumber, totalAyahs, tafsirId, onP
 export const getDownloadedTafsirs = async (tafsirId) => {
   try {
     const db = await initDB();
-    const transaction = db.transaction([STORE_NAME], 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
+    const tx = db.transaction([STORE_NAME], 'readonly');
+    const store = tx.objectStore(STORE_NAME);
     return new Promise((resolve) => {
-      const request = store.getAll();
-      request.onsuccess = () => {
+      const req = store.getAll();
+      req.onsuccess = () => {
         const surahMap = {};
-        request.result.forEach(item => {
+        req.result.forEach(item => {
           if (item.tafsirId === tafsirId) {
             if (!surahMap[item.surahNumber]) surahMap[item.surahNumber] = [];
             surahMap[item.surahNumber].push(item.ayahNumber);
@@ -154,7 +180,7 @@ export const getDownloadedTafsirs = async (tafsirId) => {
         });
         resolve(surahMap);
       };
-      request.onerror = () => resolve({});
+      req.onerror = () => resolve({});
     });
   } catch (e) { return {}; }
 };
@@ -162,17 +188,17 @@ export const getDownloadedTafsirs = async (tafsirId) => {
 export const deleteSurahTafsir = async (surahNumber, tafsirId) => {
   try {
     const db = await initDB();
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const allRequest = store.getAll();
+    const tx = db.transaction([STORE_NAME], 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const allReq = store.getAll();
     await new Promise((resolve) => {
-      allRequest.onsuccess = () => {
-        allRequest.result
+      allReq.onsuccess = () => {
+        allReq.result
           .filter(item => item.tafsirId === tafsirId && item.surahNumber === parseInt(surahNumber))
           .forEach(item => store.delete(item.id));
         resolve();
       };
-      allRequest.onerror = () => resolve();
+      allReq.onerror = () => resolve();
     });
     return true;
   } catch (e) { return false; }
