@@ -1,7 +1,7 @@
-// src/components/settings/NotificationSettings.js - KALICI BİLDİRİM EKLENDİ
+// src/components/settings/NotificationSettings.jsx - SES İNDİRME + ONLİNE DİNLEME
 
 import React, { useState, useRef, useEffect } from 'react';
-import { requestNotificationPermission, SOUND_OPTIONS } from '../../utils/notificationStorage.js';
+import { SOUND_OPTIONS, isSoundDownloaded, downloadAdhanSound, getPlayableUrl, deleteDownloadedSound } from '../../utils/notificationStorage.js';
 import { sendTestNotification } from '../../utils/notificationService.js';
 
 const NotificationSettings = ({ 
@@ -17,119 +17,121 @@ const NotificationSettings = ({
   const cardBg = darkMode ? '#4b5563' : '#f9fafb';
 
   const [playingSound, setPlayingSound] = useState(null);
+  const [downloadingSound, setDownloadingSound] = useState(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadedList, setDownloadedList] = useState([]);
   const audioRef = useRef(null);
   const intervalRef = useRef(null);
 
   useEffect(() => {
+    // İndirilmiş ses listesini yükle
+    const dl = JSON.parse(localStorage.getItem('downloaded_sounds') || '[]');
+    setDownloadedList(dl);
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = '';
         audioRef.current = null;
       }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
-  const handlePreviewSound = (soundFile, soundId) => {
-    if (playingSound === soundId) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current.src = '';
-        audioRef.current.load();
-        audioRef.current = null;
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      setPlayingSound(null);
-      return;
-    }
-
+  const stopCurrentSound = () => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current.src = '';
-      audioRef.current.load();
+      try { audioRef.current.load(); } catch(e) {}
       audioRef.current = null;
     }
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    setPlayingSound(null);
+  };
 
-    setPlayingSound(soundId);
+  // Ses dinleme - local, indirilmiş veya online
+  const handlePreviewSound = async (sound, soundType) => {
+    if (playingSound === sound.id) {
+      stopCurrentSound();
+      return;
+    }
+    stopCurrentSound();
 
-    const audio = new Audio(`/sounds/${soundFile}`);
-    audioRef.current = audio;
+    try {
+      // Çalınabilir URL al
+      const url = await getPlayableUrl(sound.id, soundType);
+      if (!url) {
+        alert('Bu ses çalınamıyor. Lütfen önce indirin.');
+        return;
+      }
 
-    const maxDuration = 15;
+      setPlayingSound(sound.id);
+      const audio = new Audio(url);
+      audioRef.current = audio;
 
-    audio.play()
-      .then(() => {
-        console.log('✅ Ses çalmaya başladı');
-      })
-      .catch(err => {
+      const maxDuration = 20;
+
+      audio.play().then(() => {
+        console.log('✅ Ses çalmaya başladı:', sound.name);
+      }).catch(err => {
         console.error('❌ Ses çalma hatası:', err);
         setPlayingSound(null);
         audioRef.current = null;
       });
 
-    intervalRef.current = setInterval(() => {
-      if (audio.currentTime >= maxDuration) {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.src = '';
-        audio.load();
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-        setPlayingSound(null);
-        audioRef.current = null;
-      }
-    }, 100);
+      intervalRef.current = setInterval(() => {
+        if (audio.currentTime >= maxDuration) {
+          stopCurrentSound();
+        }
+      }, 100);
 
-    audio.onended = () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      setPlayingSound(null);
-      audioRef.current = null;
-    };
+      audio.onended = () => stopCurrentSound();
+      audio.onerror = () => stopCurrentSound();
+    } catch (e) {
+      console.error('Ses önizleme hatası:', e);
+      stopCurrentSound();
+    }
+  };
 
-    audio.onerror = () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      setPlayingSound(null);
-      audioRef.current = null;
-    };
+  // Ses indirme
+  const handleDownload = async (sound, soundType) => {
+    setDownloadingSound(sound.id);
+    setDownloadProgress(0);
+    const success = await downloadAdhanSound(sound.id, soundType, (p) => setDownloadProgress(p));
+    if (success) {
+      const dl = JSON.parse(localStorage.getItem('downloaded_sounds') || '[]');
+      setDownloadedList(dl);
+    } else {
+      alert('İndirme başarısız oldu. İnternet bağlantınızı kontrol edin.');
+    }
+    setDownloadingSound(null);
+    setDownloadProgress(0);
+  };
+
+  // Ses silme
+  const handleDeleteSound = async (sound) => {
+    await deleteDownloadedSound(sound.id);
+    const dl = JSON.parse(localStorage.getItem('downloaded_sounds') || '[]');
+    setDownloadedList(dl);
   };
 
   const handleRequestPermission = async () => {
     try {
-      const permission = await requestNotificationPermission();
-      
-      if (permission === 'granted') {
-        onPermissionUpdate(permission);
-        alert('✅ Bildirim izni verildi!\n\nNamaz vakti bildirimleri artık çalışacak.');
-        
-        setTimeout(() => {
-          sendTestNotification();
-        }, 1000);
-      } else if (permission === 'denied') {
-        alert('❌ Bildirim izni reddedildi.\n\nİzni değiştirmek için:\n\n1. Telefon Ayarları → Uygulamalar\n2. Kuran-ı Kerim uygulamasını bulun\n3. Bildirimler → Açık');
-      } else {
-        alert('⚠️ Bildirim izni alınamadı.');
+      if (window.Notification) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          onPermissionUpdate(permission);
+          alert('✅ Bildirim izni verildi!');
+          setTimeout(() => sendTestNotification(), 1000);
+        } else {
+          alert('❌ Bildirim izni reddedildi.\n\nTelefon Ayarları → Uygulamalar → Ezan Vakti → Bildirimler → Açık');
+        }
       }
     } catch (error) {
-      console.error('İzin alma hatası:', error);
-      alert('❌ Bir hata oluştu. Lütfen tekrar deneyin.');
+      console.error('İzin hatası:', error);
     }
   };
 
@@ -141,10 +143,6 @@ const NotificationSettings = ({
     }
   };
 
-  const handleTestNotification = () => {
-    sendTestNotification();
-  };
-
   const prayerNames = {
     Fajr: { name: 'İmsak', icon: '🌙' },
     Sunrise: { name: 'Güneş', icon: '🌅' },
@@ -154,150 +152,181 @@ const NotificationSettings = ({
     Isha: { name: 'Yatsı', icon: '🌙' }
   };
 
+  // ═══════════════════════════════════════════════════
+  // SES KARTLARI - Local ve İndirilebilir ayrı
+  // ═══════════════════════════════════════════════════
+  const renderSoundCard = (sound, soundType) => {
+    const isLocal = sound.local;
+    const isDownloaded = downloadedList.includes(sound.id);
+    const isDefault = sound.id === 'default';
+    const isPlaying = playingSound === sound.id;
+    const isDownloading = downloadingSound === sound.id;
+    const isSelected = soundType === 'adhan' 
+      ? notificationSettings.selectedAdhan === sound.id
+      : notificationSettings.selectedNotification === sound.id;
+
+    return (
+      <div 
+        key={sound.id}
+        style={{
+          padding: '12px',
+          backgroundColor: darkMode ? '#374151' : '#f3f4f6',
+          borderRadius: '8px',
+          border: isSelected ? '2px solid #059669' : `2px solid ${darkMode ? '#4b5563' : '#e5e7eb'}`,
+          cursor: 'pointer',
+          transition: 'all 0.2s'
+        }}
+        onClick={() => {
+          if (soundType === 'adhan') onNotificationChange('selectedAdhan', sound.id);
+          else onNotificationChange('selectedNotification', sound.id);
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          {/* Sol: Radio + İsim + Durum */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1, minWidth: 0 }}>
+            <input
+              type="radio"
+              name={soundType}
+              value={sound.id}
+              checked={isSelected}
+              onChange={() => {
+                if (soundType === 'adhan') onNotificationChange('selectedAdhan', sound.id);
+                else onNotificationChange('selectedNotification', sound.id);
+              }}
+              style={{ cursor: 'pointer', flexShrink: 0 }}
+            />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ 
+                color: text, 
+                fontSize: '13px', 
+                fontWeight: isSelected ? 'bold' : 'normal',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {isLocal ? '📦 ' : (isDownloaded ? '✅ ' : '☁️ ')}{sound.name}
+              </div>
+              {!isLocal && !isDefault && (
+                <div style={{ fontSize: '11px', color: textSec, marginTop: '2px' }}>
+                  {isDownloaded ? 'İndirildi' : 'İndirilebilir'}
+                </div>
+              )}
+            </div>
+          </label>
+
+          {/* Sağ: Butonlar */}
+          <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+            {/* İndir / Sil butonu (sadece remote sesler) */}
+            {!isLocal && !isDefault && (
+              isDownloaded ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteSound(sound); }}
+                  title="Sil"
+                  style={{
+                    padding: '5px 8px',
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  🗑️
+                </button>
+              ) : (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDownload(sound, soundType); }}
+                  disabled={isDownloading}
+                  style={{
+                    padding: '5px 8px',
+                    backgroundColor: isDownloading ? '#6b7280' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    cursor: isDownloading ? 'not-allowed' : 'pointer',
+                    fontWeight: 'bold',
+                    minWidth: '40px'
+                  }}
+                >
+                  {isDownloading ? `${downloadProgress}%` : '📥'}
+                </button>
+              )
+            )}
+
+            {/* Dinle butonu (her ses için) */}
+            {!isDefault && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handlePreviewSound(sound, soundType); }}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: isPlaying ? '#dc2626' : '#059669',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                {isPlaying ? '⏹' : '▶'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* İndirme progress bar */}
+        {isDownloading && (
+          <div style={{ marginTop: '8px', backgroundColor: darkMode ? '#1f2937' : '#e5e7eb', borderRadius: '4px', overflow: 'hidden', height: '4px' }}>
+            <div style={{ height: '100%', backgroundColor: '#3b82f6', width: `${downloadProgress}%`, transition: 'width 0.3s' }} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div>
-      <h3 style={{ 
-        fontSize: '20px', 
-        marginBottom: '20px', 
-        color: text,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
+      <h3 style={{ fontSize: '20px', marginBottom: '20px', color: text, display: 'flex', alignItems: 'center', gap: '10px' }}>
         🔔 Bildirim Ayarları
       </h3>
 
       {notificationPermission === 'prompt' && (
-        <div style={{
-          padding: '20px',
-          backgroundColor: '#fef3c7',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          border: '2px solid #f59e0b'
-        }}>
-          <div style={{ 
-            fontSize: '16px', 
-            fontWeight: 'bold', 
-            color: '#92400e',
-            marginBottom: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
+        <div style={{ padding: '20px', backgroundColor: '#fef3c7', borderRadius: '8px', marginBottom: '20px', border: '2px solid #f59e0b' }}>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#92400e', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             ⚠️ Bildirim İzni Gerekli
           </div>
-          <div style={{ 
-            fontSize: '14px', 
-            color: '#78350f',
-            marginBottom: '15px',
-            lineHeight: '1.5'
-          }}>
+          <div style={{ fontSize: '14px', color: '#78350f', marginBottom: '15px', lineHeight: '1.5' }}>
             Namaz vakti bildirimlerini alabilmek için uygulama izni vermeniz gerekiyor.
           </div>
-          <button
-            onClick={handleRequestPermission}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
-          >
+          <button onClick={handleRequestPermission} style={{ padding: '10px 20px', backgroundColor: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}>
             📱 İzin Ver
           </button>
         </div>
       )}
 
       {notificationPermission === 'denied' && (
-        <div style={{
-          padding: '20px',
-          backgroundColor: '#fee2e2',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          border: '2px solid #ef4444'
-        }}>
-          <div style={{ 
-            fontSize: '16px', 
-            fontWeight: 'bold', 
-            color: '#991b1b',
-            marginBottom: '10px'
-          }}>
-            ❌ Bildirim İzni Reddedildi
-          </div>
-          <div style={{ 
-            fontSize: '13px', 
-            color: '#7f1d1d',
-            lineHeight: '1.5'
-          }}>
-            Bildirimleri açmak için:<br/>
-            <strong>Telefon Ayarları → Uygulamalar → Kuran-ı Kerim → Bildirimler → Açık</strong>
+        <div style={{ padding: '20px', backgroundColor: '#fee2e2', borderRadius: '8px', marginBottom: '20px', border: '2px solid #ef4444' }}>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#991b1b', marginBottom: '10px' }}>❌ Bildirim İzni Reddedildi</div>
+          <div style={{ fontSize: '13px', color: '#7f1d1d', lineHeight: '1.5' }}>
+            Bildirimleri açmak için:<br/><strong>Telefon Ayarları → Uygulamalar → Ezan Vakti → Bildirimler → Açık</strong>
           </div>
         </div>
       )}
 
-      <div style={{
-        padding: '20px',
-        backgroundColor: cardBg,
-        borderRadius: '8px',
-        marginBottom: '20px'
-      }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center'
-        }}>
+      {/* Ana Aç/Kapat */}
+      <div style={{ padding: '20px', backgroundColor: cardBg, borderRadius: '8px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ 
-              fontSize: '16px', 
-              fontWeight: 'bold', 
-              color: text,
-              marginBottom: '5px'
-            }}>
-              🕌 Namaz Vakti Bildirimleri
-            </div>
-            <div style={{ fontSize: '13px', color: textSec }}>
-              Tüm bildirimleri aç/kapat
-            </div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: text, marginBottom: '5px' }}>🕌 Namaz Vakti Bildirimleri</div>
+            <div style={{ fontSize: '13px', color: textSec }}>Tüm bildirimleri aç/kapat</div>
           </div>
-          
-          <label style={{ 
-            position: 'relative', 
-            display: 'inline-block', 
-            width: '60px', 
-            height: '34px' 
-          }}>
-            <input
-              type="checkbox"
-              checked={notificationSettings.enabled}
-              onChange={(e) => handleToggleNotifications(e.target.checked)}
-              style={{ opacity: 0, width: 0, height: 0 }}
-            />
-            <span style={{
-              position: 'absolute',
-              cursor: 'pointer',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: notificationSettings.enabled ? '#059669' : '#d1d5db',
-              transition: '0.4s',
-              borderRadius: '34px'
-            }}>
-              <span style={{
-                position: 'absolute',
-                content: '',
-                height: '26px',
-                width: '26px',
-                left: notificationSettings.enabled ? '30px' : '4px',
-                bottom: '4px',
-                backgroundColor: 'white',
-                transition: '0.4s',
-                borderRadius: '50%'
-              }}></span>
+          <label style={{ position: 'relative', display: 'inline-block', width: '60px', height: '34px' }}>
+            <input type="checkbox" checked={notificationSettings.enabled} onChange={(e) => handleToggleNotifications(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+            <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: notificationSettings.enabled ? '#059669' : '#d1d5db', transition: '0.4s', borderRadius: '34px' }}>
+              <span style={{ position: 'absolute', height: '26px', width: '26px', left: notificationSettings.enabled ? '30px' : '4px', bottom: '4px', backgroundColor: 'white', transition: '0.4s', borderRadius: '50%' }}></span>
             </span>
           </label>
         </div>
@@ -305,244 +334,85 @@ const NotificationSettings = ({
 
       {notificationSettings.enabled && (
         <>
-          <div style={{
-            padding: '20px',
-            backgroundColor: cardBg,
-            borderRadius: '8px',
-            marginBottom: '20px'
-          }}>
-            <h4 style={{ 
-              fontSize: '16px', 
-              fontWeight: 'bold', 
-              color: text,
-              marginBottom: '15px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              📊 Ses Ayarları
+          {/* ═══════════ SES AYARLARI ═══════════ */}
+          <div style={{ padding: '20px', backgroundColor: cardBg, borderRadius: '8px', marginBottom: '20px' }}>
+            <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: text, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              🎵 Ses Ayarları
             </h4>
 
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              marginBottom: '15px',
-              paddingBottom: '15px',
-              borderBottom: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`
-            }}>
+            {/* Ses Aç/Kapat */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', paddingBottom: '15px', borderBottom: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}` }}>
               <div>
-                <div style={{ fontSize: '14px', color: text, marginBottom: '3px' }}>
-                  Bildirim Sesi
-                </div>
-                <div style={{ fontSize: '12px', color: textSec }}>
-                  Ses çalma
-                </div>
+                <div style={{ fontSize: '14px', color: text }}>Bildirim Sesi</div>
+                <div style={{ fontSize: '12px', color: textSec }}>Ses çalma aç/kapat</div>
               </div>
-              
-              <label style={{ 
-                position: 'relative', 
-                display: 'inline-block', 
-                width: '50px', 
-                height: '28px' 
-              }}>
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.sound}
-                  onChange={(e) => onNotificationChange('sound', e.target.checked)}
-                  style={{ opacity: 0, width: 0, height: 0 }}
-                />
-                <span style={{
-                  position: 'absolute',
-                  cursor: 'pointer',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: notificationSettings.sound ? '#059669' : '#d1d5db',
-                  transition: '0.4s',
-                  borderRadius: '28px'
-                }}>
-                  <span style={{
-                    position: 'absolute',
-                    height: '22px',
-                    width: '22px',
-                    left: notificationSettings.sound ? '25px' : '3px',
-                    bottom: '3px',
-                    backgroundColor: 'white',
-                    transition: '0.4s',
-                    borderRadius: '50%'
-                  }}></span>
+              <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
+                <input type="checkbox" checked={notificationSettings.sound} onChange={(e) => onNotificationChange('sound', e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: notificationSettings.sound ? '#059669' : '#d1d5db', transition: '0.4s', borderRadius: '28px' }}>
+                  <span style={{ position: 'absolute', height: '22px', width: '22px', left: notificationSettings.sound ? '25px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '0.4s', borderRadius: '50%' }}></span>
                 </span>
               </label>
             </div>
 
             {notificationSettings.sound && (
               <>
+                {/* Ses Tipi Seçimi */}
                 <div style={{ marginBottom: '15px' }}>
-                  <label style={{ fontSize: '14px', color: text, marginBottom: '8px', display: 'block' }}>
-                    Ses Tipi
-                  </label>
+                  <label style={{ fontSize: '14px', color: text, marginBottom: '8px', display: 'block' }}>Ses Tipi</label>
                   <select
                     value={notificationSettings.soundType}
                     onChange={(e) => onNotificationChange('soundType', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '6px',
-                      border: `1px solid ${darkMode ? '#4b5563' : '#d1d5db'}`,
-                      backgroundColor: darkMode ? '#1f2937' : 'white',
-                      color: text,
-                      fontSize: '14px'
-                    }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${darkMode ? '#4b5563' : '#d1d5db'}`, backgroundColor: darkMode ? '#1f2937' : 'white', color: text, fontSize: '14px' }}
                   >
                     <option value="adhan">🕌 Ezan Sesi</option>
                     <option value="notification">🔔 Bildirim Sesi</option>
                   </select>
                 </div>
 
+                {/* Ezan Sesleri */}
                 {notificationSettings.soundType === 'adhan' && (
-                  <div style={{ marginBottom: '15px' }}>
-                    <label style={{ fontSize: '14px', color: text, marginBottom: '8px', display: 'block' }}>
-                      Ezan Sesi Seçin
-                    </label>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {SOUND_OPTIONS.adhan.map(sound => (
-                        <div 
-                          key={sound.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '12px',
-                            backgroundColor: darkMode ? '#374151' : '#f3f4f6',
-                            borderRadius: '6px',
-                            border: notificationSettings.selectedAdhan === sound.id 
-                              ? '2px solid #059669' 
-                              : '2px solid transparent',
-                            cursor: 'pointer'
-                          }}
-                          onClick={() => onNotificationChange('selectedAdhan', sound.id)}
-                        >
-                          <label style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '10px',
-                            cursor: 'pointer',
-                            flex: 1
-                          }}>
-                            <input
-                              type="radio"
-                              name="adhan"
-                              value={sound.id}
-                              checked={notificationSettings.selectedAdhan === sound.id}
-                              onChange={() => onNotificationChange('selectedAdhan', sound.id)}
-                              style={{ cursor: 'pointer' }}
-                            />
-                            <span style={{ color: text, fontSize: '14px' }}>
-                              {sound.name}
-                            </span>
-                          </label>
-                          
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onNotificationChange('selectedAdhan', sound.id);
-                              handlePreviewSound(sound.file, sound.id);
-                            }}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: playingSound === sound.id ? '#dc2626' : '#059669',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            {playingSound === sound.id ? '⏹️ Durdur' : '📊 Dinle'}
-                          </button>
-                        </div>
-                      ))}
+                  <div>
+                    {/* Yerel Ezanlar */}
+                    <div style={{ fontSize: '13px', color: '#059669', fontWeight: 'bold', marginBottom: '8px', marginTop: '10px' }}>
+                      📦 Yerel Sesler (Yüklü)
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '15px' }}>
+                      {SOUND_OPTIONS.adhan.filter(s => s.local).map(sound => renderSoundCard(sound, 'adhan'))}
+                    </div>
+
+                    {/* İndirilebilir Ezanlar */}
+                    <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: 'bold', marginBottom: '8px' }}>
+                      ☁️ İndirilebilir Sesler ({SOUND_OPTIONS.adhan.filter(s => !s.local).length} ezan)
+                    </div>
+                    <div style={{ fontSize: '11px', color: textSec, marginBottom: '8px' }}>
+                      ▶ ile online dinleyin, 📥 ile indirin. İndirilen sesler çevrimdışı çalışır.
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {SOUND_OPTIONS.adhan.filter(s => !s.local).map(sound => renderSoundCard(sound, 'adhan'))}
                     </div>
                   </div>
                 )}
 
+                {/* Bildirim Sesleri */}
                 {notificationSettings.soundType === 'notification' && (
-                  <div style={{ marginBottom: '15px' }}>
-                    <label style={{ fontSize: '14px', color: text, marginBottom: '8px', display: 'block' }}>
-                      Bildirim Sesi Seçin
-                    </label>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {SOUND_OPTIONS.notification.map(sound => (
-                        <div 
-                          key={sound.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '12px',
-                            backgroundColor: darkMode ? '#374151' : '#f3f4f6',
-                            borderRadius: '6px',
-                            border: notificationSettings.selectedNotification === sound.id 
-                              ? '2px solid #059669' 
-                              : '2px solid transparent',
-                            cursor: 'pointer'
-                          }}
-                          onClick={() => onNotificationChange('selectedNotification', sound.id)}
-                        >
-                          <label style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '10px',
-                            cursor: 'pointer',
-                            flex: 1
-                          }}>
-                            <input
-                              type="radio"
-                              name="notification"
-                              value={sound.id}
-                              checked={notificationSettings.selectedNotification === sound.id}
-                              onChange={() => onNotificationChange('selectedNotification', sound.id)}
-                              style={{ cursor: 'pointer' }}
-                            />
-                            <span style={{ color: text, fontSize: '14px' }}>
-                              {sound.name}
-                            </span>
-                          </label>
-                          
-                          {sound.id !== 'default' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onNotificationChange('selectedNotification', sound.id);
-                                handlePreviewSound(sound.file, sound.id);
-                              }}
-                              style={{
-                                padding: '6px 12px',
-                                backgroundColor: playingSound === sound.id ? '#dc2626' : '#059669',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                fontSize: '12px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                fontWeight: 'bold'
-                              }}
-                            >
-                              {playingSound === sound.id ? '⏹️ Durdur' : '📊 Dinle'}
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#059669', fontWeight: 'bold', marginBottom: '8px', marginTop: '10px' }}>
+                      📦 Yerel Sesler
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '15px' }}>
+                      {SOUND_OPTIONS.notification.filter(s => s.local).map(sound => renderSoundCard(sound, 'notification'))}
+                    </div>
+
+                    <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: 'bold', marginBottom: '8px' }}>
+                      ☁️ İndirilebilir Sesler
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {SOUND_OPTIONS.notification.filter(s => !s.local && s.id !== 'default').map(sound => renderSoundCard(sound, 'notification'))}
+                    </div>
+
+                    {/* Sistem Varsayılanı */}
+                    <div style={{ marginTop: '10px' }}>
+                      {renderSoundCard(SOUND_OPTIONS.notification.find(s => s.id === 'default'), 'notification')}
                     </div>
                   </div>
                 )}
@@ -550,269 +420,75 @@ const NotificationSettings = ({
             )}
           </div>
 
-          <div style={{
-            padding: '20px',
-            backgroundColor: cardBg,
-            borderRadius: '8px',
-            marginBottom: '20px'
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center'
-            }}>
+          {/* ═══════════ TİTREŞİM ═══════════ */}
+          <div style={{ padding: '20px', backgroundColor: cardBg, borderRadius: '8px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ 
-                  fontSize: '16px', 
-                  fontWeight: 'bold', 
-                  color: text,
-                  marginBottom: '5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  📳 Titreşim
-                </div>
-                <div style={{ fontSize: '13px', color: textSec }}>
-                  Bildirim geldiğinde titreşim
-                </div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: text, marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '8px' }}>📳 Titreşim</div>
+                <div style={{ fontSize: '13px', color: textSec }}>Bildirim geldiğinde titreşim</div>
               </div>
-              
-              <label style={{ 
-                position: 'relative', 
-                display: 'inline-block', 
-                width: '50px', 
-                height: '28px' 
-              }}>
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.vibration}
-                  onChange={(e) => onNotificationChange('vibration', e.target.checked)}
-                  style={{ opacity: 0, width: 0, height: 0 }}
-                />
-                <span style={{
-                  position: 'absolute',
-                  cursor: 'pointer',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: notificationSettings.vibration ? '#059669' : '#d1d5db',
-                  transition: '0.4s',
-                  borderRadius: '28px'
-                }}>
-                  <span style={{
-                    position: 'absolute',
-                    height: '22px',
-                    width: '22px',
-                    left: notificationSettings.vibration ? '25px' : '3px',
-                    bottom: '3px',
-                    backgroundColor: 'white',
-                    transition: '0.4s',
-                    borderRadius: '50%'
-                  }}></span>
+              <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
+                <input type="checkbox" checked={notificationSettings.vibration} onChange={(e) => onNotificationChange('vibration', e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: notificationSettings.vibration ? '#059669' : '#d1d5db', transition: '0.4s', borderRadius: '28px' }}>
+                  <span style={{ position: 'absolute', height: '22px', width: '22px', left: notificationSettings.vibration ? '25px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '0.4s', borderRadius: '50%' }}></span>
                 </span>
               </label>
             </div>
           </div>
 
-          <div style={{
-            padding: '20px',
-            backgroundColor: cardBg,
-            borderRadius: '8px',
-            marginBottom: '20px'
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center'
-            }}>
+          {/* ═══════════ KALICI BİLDİRİM ═══════════ */}
+          <div style={{ padding: '20px', backgroundColor: cardBg, borderRadius: '8px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ 
-                  fontSize: '16px', 
-                  fontWeight: 'bold', 
-                  color: text,
-                  marginBottom: '5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  📌 Kalıcı Bildirim
-                </div>
-                <div style={{ fontSize: '13px', color: textSec }}>
-                  Sonraki namaz vakti sürekli gösterimde
-                </div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: text, marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '8px' }}>📌 Kalıcı Bildirim</div>
+                <div style={{ fontSize: '13px', color: textSec }}>Sonraki namaz vakti sürekli gösterimde</div>
               </div>
-              
-              <label style={{ 
-                position: 'relative', 
-                display: 'inline-block', 
-                width: '50px', 
-                height: '28px' 
-              }}>
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.persistentNotification || false}
-                  onChange={(e) => onNotificationChange('persistentNotification', e.target.checked)}
-                  style={{ opacity: 0, width: 0, height: 0 }}
-                />
-                <span style={{
-                  position: 'absolute',
-                  cursor: 'pointer',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: notificationSettings.persistentNotification ? '#059669' : '#d1d5db',
-                  transition: '0.4s',
-                  borderRadius: '28px'
-                }}>
-                  <span style={{
-                    position: 'absolute',
-                    height: '22px',
-                    width: '22px',
-                    left: notificationSettings.persistentNotification ? '25px' : '3px',
-                    bottom: '3px',
-                    backgroundColor: 'white',
-                    transition: '0.4s',
-                    borderRadius: '50%'
-                  }}></span>
+              <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
+                <input type="checkbox" checked={notificationSettings.persistentNotification || false} onChange={(e) => onNotificationChange('persistentNotification', e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: notificationSettings.persistentNotification ? '#059669' : '#d1d5db', transition: '0.4s', borderRadius: '28px' }}>
+                  <span style={{ position: 'absolute', height: '22px', width: '22px', left: notificationSettings.persistentNotification ? '25px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '0.4s', borderRadius: '50%' }}></span>
                 </span>
               </label>
             </div>
           </div>
 
-          <div style={{
-            padding: '20px',
-            backgroundColor: cardBg,
-            borderRadius: '8px',
-            marginBottom: '20px',
-            textAlign: 'center'
-          }}>
+          {/* ═══════════ TEST BİLDİRİMİ ═══════════ */}
+          <div style={{ padding: '20px', backgroundColor: cardBg, borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
             <button
-              onClick={handleTestNotification}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#059669',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                width: '100%'
-              }}
+              onClick={() => sendTestNotification()}
+              style={{ padding: '12px 24px', backgroundColor: '#059669', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}
             >
               🔔 Test Bildirimi Gönder
             </button>
-            <div style={{ 
-              fontSize: '12px', 
-              color: textSec, 
-              marginTop: '10px' 
-            }}>
-              Seçili ayarlarla test bildirimi gönderilir
-            </div>
+            <div style={{ fontSize: '12px', color: textSec, marginTop: '10px' }}>Seçili ayarlarla test bildirimi gönderilir</div>
           </div>
 
-          <div style={{
-            padding: '20px',
-            backgroundColor: cardBg,
-            borderRadius: '8px'
-          }}>
-            <h4 style={{ 
-              fontSize: '16px', 
-              fontWeight: 'bold', 
-              color: text,
-              marginBottom: '15px'
-            }}>
-              🕌 Namaz Vakitleri
-            </h4>
+          {/* ═══════════ NAMAZ VAKİTLERİ ═══════════ */}
+          <div style={{ padding: '20px', backgroundColor: cardBg, borderRadius: '8px' }}>
+            <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: text, marginBottom: '15px' }}>🕌 Namaz Vakitleri</h4>
 
             {Object.keys(prayerNames).map(prayer => (
-              <div 
-                key={prayer}
-                style={{
-                  padding: '12px 0',
-                  borderBottom: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`
-                }}
-              >
-                <div 
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
+              <div key={prayer} style={{ padding: '12px 0', borderBottom: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '20px' }}>{prayerNames[prayer].icon}</span>
-                    <span style={{ color: text, fontSize: '14px' }}>
-                      {prayerNames[prayer].name}
-                    </span>
+                    <span style={{ color: text, fontSize: '14px' }}>{prayerNames[prayer].name}</span>
                   </div>
-                  
-                  <label style={{ 
-                    position: 'relative', 
-                    display: 'inline-block', 
-                    width: '50px', 
-                    height: '28px' 
-                  }}>
-                    <input
-                      type="checkbox"
-                      checked={notificationSettings.prayerNotifications[prayer]?.enabled}
-                      onChange={(e) => onPrayerNotificationChange(prayer, 'enabled', e.target.checked)}
-                      style={{ opacity: 0, width: 0, height: 0 }}
-                    />
-                    <span style={{
-                      position: 'absolute',
-                      cursor: 'pointer',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      backgroundColor: notificationSettings.prayerNotifications[prayer]?.enabled ? '#059669' : '#d1d5db',
-                      transition: '0.4s',
-                      borderRadius: '28px'
-                    }}>
-                      <span style={{
-                        position: 'absolute',
-                        height: '22px',
-                        width: '22px',
-                        left: notificationSettings.prayerNotifications[prayer]?.enabled ? '25px' : '3px',
-                        bottom: '3px',
-                        backgroundColor: 'white',
-                        transition: '0.4s',
-                        borderRadius: '50%'
-                      }}></span>
+                  <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
+                    <input type="checkbox" checked={notificationSettings.prayerNotifications[prayer]?.enabled} onChange={(e) => onPrayerNotificationChange(prayer, 'enabled', e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: notificationSettings.prayerNotifications[prayer]?.enabled ? '#059669' : '#d1d5db', transition: '0.4s', borderRadius: '28px' }}>
+                      <span style={{ position: 'absolute', height: '22px', width: '22px', left: notificationSettings.prayerNotifications[prayer]?.enabled ? '25px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '0.4s', borderRadius: '50%' }}></span>
                     </span>
                   </label>
                 </div>
                 
                 {notificationSettings.prayerNotifications[prayer]?.enabled && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    marginTop: '15px',
-                    padding: '10px',
-                    backgroundColor: darkMode ? '#1f2937' : '#e5e7eb',
-                    borderRadius: '6px'
-                  }}>
-                    <label style={{ color: text, fontSize: '12px', whiteSpace: 'nowrap' }}>
-                      Vakitten 
-                    </label>
-                    
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '15px', padding: '10px', backgroundColor: darkMode ? '#1f2937' : '#e5e7eb', borderRadius: '6px' }}>
+                    <label style={{ color: text, fontSize: '12px', whiteSpace: 'nowrap' }}>Vakitten</label>
                     <select
-                      value={notificationSettings.prayerNotifications[prayer]?.adjustment || 0} 
+                      value={notificationSettings.prayerNotifications[prayer]?.adjustment || 0}
                       onChange={(e) => onPrayerNotificationChange(prayer, 'adjustment', parseInt(e.target.value))}
-                      style={{
-                        padding: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid #9ca3af',
-                        backgroundColor: darkMode ? '#374151' : 'white',
-                        color: text,
-                        fontSize: '12px',
-                        flex: 1
-                      }}
+                      style={{ padding: '6px', borderRadius: '4px', border: '1px solid #9ca3af', backgroundColor: darkMode ? '#374151' : 'white', color: text, fontSize: '12px', flex: 1 }}
                     >
                       <option value={-10}>10 dk ÖNCE</option>
                       <option value={-5}>5 dk ÖNCE</option>
@@ -820,10 +496,7 @@ const NotificationSettings = ({
                       <option value={5}>5 dk SONRA</option>
                       <option value={10}>10 dk SONRA</option>
                     </select>
-                    
-                    <label style={{ color: text, fontSize: '12px', whiteSpace: 'nowrap' }}>
-                      Ayarlı
-                    </label>
+                    <label style={{ color: text, fontSize: '12px', whiteSpace: 'nowrap' }}>Ayarlı</label>
                   </div>
                 )}
               </div>
