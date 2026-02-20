@@ -256,6 +256,7 @@ public class PrayerForegroundService extends Service implements SensorEventListe
                 int currentTotalSec = now.get(Calendar.HOUR_OF_DAY) * 3600 + now.get(Calendar.MINUTE) * 60 + now.get(Calendar.SECOND);
                 String[] names = {"Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"};
                 String[] trNames = {"İmsak", "Güneş", "Öğle", "İkindi", "Akşam", "Yatsı"};
+                boolean found = false;
                 for (int i = 0; i < names.length; i++) {
                     String timeStr = prayerTimes.optString(names[i]);
                     if (timeStr != null && timeStr.contains(":")) {
@@ -265,8 +266,24 @@ public class PrayerForegroundService extends Service implements SensorEventListe
                             int diff = pSec - currentTotalSec;
                             title = "🕌 " + trNames[i] + " - " + timeStr;
                             contentText = "⏳ Kalan: " + (diff / 3600 > 0 ? (diff / 3600) + " sa " : "") + ((diff % 3600) / 60) + " dk";
+                            found = true;
                             break;
                         }
+                    }
+                }
+                // Yatsıdan sonra: Ertesi gün İmsak vaktine geri sayım göster
+                if (!found) {
+                    String fajrStr = prayerTimes.optString("Fajr");
+                    if (fajrStr != null && fajrStr.contains(":")) {
+                        String[] parts = fajrStr.split(":");
+                        int fajrSec = Integer.parseInt(parts[0].trim()) * 3600 + Integer.parseInt(parts[1].trim()) * 60;
+                        // Ertesi günün İmsak'ına kalan saniye = (86400 - şimdi) + İmsak saniyesi
+                        int diff = (86400 - currentTotalSec) + fajrSec;
+                        title = "🌙 İmsak (yarın) - " + fajrStr;
+                        contentText = "⏳ Kalan: " + (diff / 3600) + " sa " + ((diff % 3600) / 60) + " dk";
+                    } else {
+                        title = "🌙 Tüm vakitler geçti";
+                        contentText = "Yarının vakitleri yakında güncellenecek";
                     }
                 }
             } catch (Exception e) {}

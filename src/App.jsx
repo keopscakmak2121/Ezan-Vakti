@@ -60,6 +60,16 @@ const App = () => {
   useEffect(() => {
     if (showSetup) return;
 
+    // 0) Native taraftan gelen fullscreen alarm event'i dinle
+    const handleNativeAlarm = (e) => {
+      const { prayerName, prayerTime } = e.detail || {};
+      if (prayerName) {
+        console.log('🕌 Native alarm alındı:', prayerName, prayerTime);
+        setFullScreenPrayer({ name: prayerName, time: prayerTime || '' });
+      }
+    };
+    window.addEventListener('nativePrayerAlarm', handleNativeAlarm);
+
     // 1) Bildirim Geldiğinde (Uygulama ön planda veya arka planda ama tetiklendiğinde)
     let listenerReceived = null;
     let listenerAction = null;
@@ -69,7 +79,6 @@ const App = () => {
       LocalNotifications.addListener('localNotificationReceived', (notification) => {
         const extra = notification?.extra;
         if (extra && extra.prayerName) {
-          // Namaz vakti bildirimi ise tam ekranı tetikle
           setFullScreenPrayer({
             name: extra.prayerName,
             time: extra.prayerTime || ''
@@ -113,6 +122,7 @@ const App = () => {
 
     return () => {
       clearInterval(interval);
+      window.removeEventListener('nativePrayerAlarm', handleNativeAlarm);
       if (listenerReceived) listenerReceived.remove();
       if (listenerAction) listenerAction.remove();
     };

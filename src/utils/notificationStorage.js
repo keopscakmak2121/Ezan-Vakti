@@ -99,10 +99,26 @@ export const downloadAdhanSound = async (soundId, soundType) => {
         // Zaten varsa hata verebilir, yoksayıyoruz
       }
 
-      // 2) İndirme (Daha önce çalışan kararlı yöntem)
-      await Filesystem.downloadFile({
-        url: sound.remoteUrl,
+      // 2) Fetch ile indir ve base64 olarak yaz
+      // (Capacitor Filesystem'de downloadFile yok, fetch+writeFile kullanıyoruz)
+      const response = await fetch(sound.remoteUrl);
+      if (!response.ok) throw new Error('İndirme başarısız: ' + response.status);
+      
+      const blob = await response.blob();
+      const base64Data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          // data:audio/mpeg;base64,XXXX formatından sadece base64 kısmını al
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      await Filesystem.writeFile({
         path: `sounds/${sound.file}`,
+        data: base64Data,
         directory: Directory.Data
       });
     }
