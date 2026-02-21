@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const QiblaFinder = ({ darkMode }) => {
   const [location, setLocation] = useState(null);
@@ -6,27 +6,25 @@ const QiblaFinder = ({ darkMode }) => {
   const [deviceHeading, setDeviceHeading] = useState(0);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [permissionStatus, setPermissionStatus] = useState('prompt');
-  
-  // Yumuşatma için
-  const headingHistory = useRef([]);
-  const lastUpdate = useRef(Date.now());
+  const [hasCompass, setHasCompass] = useState(true);
+  const [calibrationNeeded, setCalibrationNeeded] = useState(false);
 
-  // Kabe'nin koordinatları
+  const smoothedHeading = useRef(0);
+  const animFrameRef = useRef(null);
+  const displayHeading = useRef(0);
+  const targetHeading = useRef(0);
+
   const KAABA = { lat: 21.4225, lng: 39.8262 };
 
-  // Derece cinsinden açıyı hesapla
+  // Kıble açısı hesapla (Great Circle Bearing)
   const calculateQiblaDirection = (userLat, userLng) => {
     const toRad = (deg) => (deg * Math.PI) / 180;
     const toDeg = (rad) => (rad * 180) / Math.PI;
-
     const lat1 = toRad(userLat);
     const lat2 = toRad(KAABA.lat);
     const dLng = toRad(KAABA.lng - userLng);
-
-    const y = Math.sin(dLng);
-    const x = Math.cos(lat1) * Math.tan(lat2) - Math.sin(lat1) * Math.cos(dLng);
-    
+    const y = Math.sin(dLng) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
     let bearing = toDeg(Math.atan2(y, x));
     return (bearing + 360) % 360;
   };
@@ -35,324 +33,380 @@ const QiblaFinder = ({ darkMode }) => {
   const getLocation = () => {
     setLoading(true);
     setError(null);
-
     if (!navigator.geolocation) {
-      setError('Tarayıcınız konum servisini desteklemiyor.');
+      setError('Konum servisi desteklenmiyor.');
       setLoading(false);
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         setLocation({ lat: latitude, lng: longitude });
-        const direction = calculateQiblaDirection(latitude, longitude);
-        setQiblaDirection(direction);
+        setQiblaDirection(calculateQiblaDirection(latitude, longitude));
         setLoading(false);
-        setPermissionStatus('granted');
       },
-      (err) => {
-        setError('Konum alınamadı. Lütfen konum iznini kontrol edin.');
+      () => {
+        setError('Konum alınamadı. Konum iznini kontrol edin.');
         setLoading(false);
-        setPermissionStatus('denied');
-        console.error(err);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
-  // Yumuşatılmış ortalama hesapla
-  const smoothHeading = (newHeading) => {
-    headingHistory.current.push(newHeading);
-    
-    // Son 5 değeri tut
-    if (headingHistory.current.length > 5) {
-      headingHistory.current.shift();
-    }
-    
-    // Ortalama al
-    const sum = headingHistory.current.reduce((a, b) => a + b, 0);
-    return sum / headingHistory.current.length;
+  // Açı farkını en kısa yoldan hesapla (-180 ile +180 arası)
+  const shortAngleDist = (from, to) => {
+    const diff = ((to - from + 180) % 360 + 360) % 360 - 180;
+    return diff;
   };
 
-  // Pusula yönünü dinle
-  useEffect(() => {
-    const handleOrientation = (event) => {
-      // Throttle: 100ms'de bir güncelle
-      const now = Date.now();
-      if (now - lastUpdate.current < 100) return;
-      lastUpdate.current = now;
+  // Smooth animasyon döngüsü
+  const animate = useCallback(() => {
+    const diff = shortAngleDist(displayHeading.current, targetHeading.current);
+    displayHeading.current += diff * 0.12; // Lerp faktörü
+    displayHeading.current = ((displayHeading.current % 360) + 360) % 360;
+    setDeviceHeading(displayHeading.current);
+    animFrameRef.current = requestAnimationFrame(animate);
+  }, []);
 
-      let heading = event.alpha || 0;
-      
-      // iOS için webkitCompassHeading kullan
+  useEffect(() => {
+    animFrameRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [animate]);
+
+  // Pusula sensörü
+  useEffect(() => {
+    let orientationHandler = null;
+    let compassTimeout = null;
+
+    const handleOrientation = (event) => {
+      let heading = 0;
       if (event.webkitCompassHeading !== undefined) {
         heading = event.webkitCompassHeading;
       } else if (event.alpha !== null) {
-        // Android için alpha'yı kullan (ters çevir)
-        heading = 360 - event.alpha;
+        if (event.absolute) {
+          heading = (360 - event.alpha) % 360;
+        } else {
+          heading = (360 - event.alpha) % 360;
+        }
       }
+
+      // Doğruluğu kontrol et
+      if (event.webkitCompassAccuracy !== undefined && event.webkitCompassAccuracy < 0) {
+        setCalibrationNeeded(true);
+      } else {
+        setCalibrationNeeded(false);
+      }
+
+      targetHeading.current = heading;
       
-      // Yumuşatılmış değeri kullan
-      const smoothed = smoothHeading(heading);
-      setDeviceHeading(smoothed);
+      if (compassTimeout) clearTimeout(compassTimeout);
+      setHasCompass(true);
     };
 
-    // iOS için izin iste
-    if (typeof DeviceOrientationEvent !== 'undefined' && 
+    orientationHandler = handleOrientation;
+
+    // iOS izin
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function') {
       DeviceOrientationEvent.requestPermission()
         .then(response => {
           if (response === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation, true);
+            window.addEventListener('deviceorientation', orientationHandler, true);
           }
         })
-        .catch(console.error);
+        .catch(() => setHasCompass(false));
     } else {
-      window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-      window.addEventListener('deviceorientation', handleOrientation, true);
+      window.addEventListener('deviceorientationabsolute', orientationHandler, true);
+      window.addEventListener('deviceorientation', orientationHandler, true);
     }
 
+    // 3 saniye içinde veri gelmezse pusula yok
+    compassTimeout = setTimeout(() => {
+      // Eğer hala 0 ise pusula çalışmıyor olabilir
+    }, 3000);
+
     return () => {
-      window.removeEventListener('deviceorientationabsolute', handleOrientation);
-      window.removeEventListener('deviceorientation', handleOrientation);
+      window.removeEventListener('deviceorientationabsolute', orientationHandler);
+      window.removeEventListener('deviceorientation', orientationHandler);
+      if (compassTimeout) clearTimeout(compassTimeout);
     };
   }, []);
 
-  // Kıble okunu hesapla
-  const calculateArrowRotation = () => {
-    if (qiblaDirection === null) return 0;
-    return qiblaDirection - deviceHeading;
+  // İlk yüklenmede otomatik konum al
+  useEffect(() => {
+    getLocation();
+  }, []);
+
+  // Kıble oku açısı
+  const qiblaRotation = qiblaDirection !== null ? qiblaDirection - deviceHeading : 0;
+  // Pusula diski dönüş açısı (kuzey yukarı kalacak şekilde)
+  const compassRotation = -deviceHeading;
+
+  // Yön ismi
+  const getDirectionName = (deg) => {
+    const d = ((deg % 360) + 360) % 360;
+    if (d >= 337.5 || d < 22.5) return 'Kuzey';
+    if (d >= 22.5 && d < 67.5) return 'Kuzeydoğu';
+    if (d >= 67.5 && d < 112.5) return 'Doğu';
+    if (d >= 112.5 && d < 157.5) return 'Güneydoğu';
+    if (d >= 157.5 && d < 202.5) return 'Güney';
+    if (d >= 202.5 && d < 247.5) return 'Güneybatı';
+    if (d >= 247.5 && d < 292.5) return 'Batı';
+    return 'Kuzeybatı';
   };
 
-  const styles = {
-    container: {
-      padding: '20px',
-      maxWidth: '600px',
-      margin: '0 auto',
-      color: darkMode ? '#fff' : '#000',
-    },
-    header: {
-      textAlign: 'center',
-      marginBottom: '30px',
-    },
-    title: {
-      fontSize: '28px',
-      fontWeight: 'bold',
-      marginBottom: '10px',
-      color: darkMode ? '#10b981' : '#059669',
-    },
-    subtitle: {
-      fontSize: '16px',
-      color: darkMode ? '#9ca3af' : '#6b7280',
-    },
-    compassContainer: {
-      position: 'relative',
-      width: '300px',
-      height: '300px',
-      margin: '30px auto',
-      backgroundColor: darkMode ? '#1f2937' : '#f3f4f6',
-      borderRadius: '50%',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    compass: {
-      width: '280px',
-      height: '280px',
-      borderRadius: '50%',
-      border: `4px solid ${darkMode ? '#374151' : '#d1d5db'}`,
-      position: 'relative',
-      backgroundColor: darkMode ? '#111827' : '#ffffff',
-    },
-    compassCenter: {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: '20px',
-      height: '20px',
-      backgroundColor: '#059669',
-      borderRadius: '50%',
-      zIndex: 10,
-    },
-    arrow: {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      width: '0',
-      height: '0',
-      borderLeft: '20px solid transparent',
-      borderRight: '20px solid transparent',
-      borderBottom: '120px solid #10b981',
-      transformOrigin: '50% 100%',
-      transform: `translate(-50%, -100%) rotate(${calculateArrowRotation()}deg)`,
-      transition: 'transform 0.5s ease-out',
-      zIndex: 5,
-    },
-    cardinalPoints: {
-      position: 'absolute',
-      width: '100%',
-      height: '100%',
-      fontSize: '18px',
-      fontWeight: 'bold',
-      color: darkMode ? '#9ca3af' : '#4b5563',
-    },
-    north: {
-      position: 'absolute',
-      top: '10px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      color: '#ef4444',
-    },
-    east: {
-      position: 'absolute',
-      right: '10px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-    },
-    south: {
-      position: 'absolute',
-      bottom: '10px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-    },
-    west: {
-      position: 'absolute',
-      left: '10px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-    },
-    infoCard: {
-      backgroundColor: darkMode ? '#1f2937' : '#f9fafb',
-      padding: '20px',
-      borderRadius: '12px',
-      marginTop: '20px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    },
-    infoRow: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      padding: '10px 0',
-      borderBottom: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
-    },
-    infoLabel: {
-      color: darkMode ? '#9ca3af' : '#6b7280',
-    },
-    infoValue: {
-      fontWeight: 'bold',
-      color: darkMode ? '#10b981' : '#059669',
-    },
-    button: {
-      backgroundColor: '#059669',
-      color: 'white',
-      border: 'none',
-      padding: '15px 30px',
-      borderRadius: '12px',
-      fontSize: '16px',
-      fontWeight: 'bold',
-      cursor: 'pointer',
-      width: '100%',
-      marginTop: '20px',
-      transition: 'background-color 0.3s',
-    },
-    error: {
-      backgroundColor: '#fee2e2',
-      color: '#dc2626',
-      padding: '15px',
-      borderRadius: '8px',
-      marginTop: '20px',
-      textAlign: 'center',
-    },
-    loading: {
-      textAlign: 'center',
-      padding: '40px',
-      fontSize: '18px',
-      color: darkMode ? '#9ca3af' : '#6b7280',
-    },
-  };
+  // Kıble doğru yönde mi (±15 derece tolerans)
+  const isAligned = qiblaDirection !== null && Math.abs(shortAngleDist(deviceHeading, qiblaDirection)) < 15;
+
+  const bg = darkMode ? '#0f172a' : '#f8fafc';
+  const cardBg = darkMode ? '#1e293b' : '#ffffff';
+  const text = darkMode ? '#f1f5f9' : '#0f172a';
+  const textSec = darkMode ? '#94a3b8' : '#64748b';
+  const accent = '#059669';
+  const accentLight = '#10b981';
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>🧭 Kıble Yönü</h1>
-        <p style={styles.subtitle}>Namaz kılarken yönünüzü Kabe'ye çevirin</p>
+    <div style={{ padding: '16px', maxWidth: '420px', margin: '0 auto', color: text, minHeight: '100vh', background: bg }}>
+      
+      {/* Başlık */}
+      <div style={{ textAlign: 'center', marginBottom: '24px', paddingTop: '8px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', color: accent, margin: '0 0 4px 0' }}>
+          🕋 Kıble Pusulası
+        </h1>
+        <p style={{ fontSize: '14px', color: textSec, margin: 0 }}>Kabe yönünü bulun</p>
       </div>
 
-      {!location && !loading && (
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ marginBottom: '20px', color: darkMode ? '#9ca3af' : '#6b7280' }}>
-            Kıble yönünü bulmak için konumunuza erişmemiz gerekiyor.
-          </p>
-          <button 
-            style={styles.button}
-            onClick={getLocation}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#047857'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#059669'}
-          >
-            📍 Konumu Al ve Kıble Yönünü Bul
+      {/* Hata */}
+      {error && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '16px', marginBottom: '20px', textAlign: 'center' }}>
+          <div style={{ color: '#dc2626', fontSize: '14px' }}>⚠️ {error}</div>
+          <button onClick={getLocation} style={{ marginTop: '10px', padding: '8px 20px', background: accent, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+            Tekrar Dene
           </button>
         </div>
       )}
 
+      {/* Yükleniyor */}
       {loading && (
-        <div style={styles.loading}>
-          <div>🔄 Konum alınıyor...</div>
+        <div style={{ textAlign: 'center', padding: '60px 0' }}>
+          <div style={{ fontSize: '40px', marginBottom: '12px', animation: 'spin 1s linear infinite' }}>🔄</div>
+          <div style={{ color: textSec, fontSize: '16px' }}>Konum alınıyor...</div>
+          <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
 
-      {error && (
-        <div style={styles.error}>
-          ⚠️ {error}
-        </div>
-      )}
-
-      {location && qiblaDirection !== null && (
+      {/* Pusula */}
+      {location && qiblaDirection !== null && !loading && (
         <>
-          <div style={styles.compassContainer}>
-            <div style={styles.compass}>
-              <div style={styles.cardinalPoints}>
-                <div style={styles.north}>K</div>
-                <div style={styles.east}>D</div>
-                <div style={styles.south}>G</div>
-                <div style={styles.west}>B</div>
+          {/* Hizalama Göstergesi */}
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '16px',
+            padding: '10px 16px',
+            borderRadius: '12px',
+            background: isAligned 
+              ? (darkMode ? 'rgba(16,185,129,0.15)' : 'rgba(5,150,105,0.08)')
+              : (darkMode ? 'rgba(148,163,184,0.1)' : 'rgba(100,116,139,0.06)'),
+            border: isAligned ? '1px solid rgba(16,185,129,0.3)' : '1px solid transparent',
+            transition: 'all 0.5s ease'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: '700', color: isAligned ? accentLight : textSec }}>
+              {isAligned ? '✅ Kıble Yönündesiniz!' : `🧭 Kıble: ${getDirectionName(qiblaDirection)}`}
+            </div>
+          </div>
+
+          {/* Pusula SVG */}
+          <div style={{ position: 'relative', width: '300px', height: '300px', margin: '0 auto 24px' }}>
+            {/* Dış halka glow efekti */}
+            <div style={{
+              position: 'absolute', inset: '-4px', borderRadius: '50%',
+              background: isAligned 
+                ? 'conic-gradient(from 0deg, rgba(16,185,129,0.4), rgba(16,185,129,0.1), rgba(16,185,129,0.4))'
+                : 'none',
+              transition: 'all 0.5s ease',
+              filter: 'blur(4px)'
+            }} />
+            
+            <svg viewBox="0 0 300 300" width="300" height="300" style={{ position: 'relative', zIndex: 1 }}>
+              <defs>
+                {/* Pusula arka plan gradyanı */}
+                <radialGradient id="compassBg" cx="50%" cy="50%">
+                  <stop offset="0%" stopColor={darkMode ? '#1e293b' : '#ffffff'} />
+                  <stop offset="85%" stopColor={darkMode ? '#0f172a' : '#f1f5f9'} />
+                  <stop offset="100%" stopColor={darkMode ? '#0f172a' : '#e2e8f0'} />
+                </radialGradient>
+                
+                {/* Kıble ok gradyanı */}
+                <linearGradient id="qiblaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#059669" />
+                </linearGradient>
+
+                {/* Kıble glow */}
+                <filter id="qiblaGlow">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                {/* Pusula çizgi gradyanı */}
+                <linearGradient id="northGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ef4444" />
+                  <stop offset="100%" stopColor="#dc2626" />
+                </linearGradient>
+              </defs>
+
+              {/* Ana daire */}
+              <circle cx="150" cy="150" r="145" fill="url(#compassBg)" stroke={darkMode ? '#334155' : '#cbd5e1'} strokeWidth="2" />
+              
+              {/* İç çizgiler dairesi */}
+              <circle cx="150" cy="150" r="130" fill="none" stroke={darkMode ? '#1e293b' : '#e2e8f0'} strokeWidth="1" />
+              <circle cx="150" cy="150" r="100" fill="none" stroke={darkMode ? '#1e293b' : '#e2e8f0'} strokeWidth="0.5" strokeDasharray="4 4" />
+
+              {/* Dönen pusula diski */}
+              <g transform={`rotate(${compassRotation} 150 150)`} style={{ transition: 'none' }}>
+                
+                {/* Derece çizgileri */}
+                {Array.from({ length: 72 }, (_, i) => {
+                  const angle = i * 5;
+                  const isMajor = angle % 30 === 0;
+                  const isMid = angle % 15 === 0;
+                  const r1 = isMajor ? 118 : (isMid ? 123 : 126);
+                  const r2 = 130;
+                  const rad = (angle - 90) * Math.PI / 180;
+                  return (
+                    <line
+                      key={i}
+                      x1={150 + r1 * Math.cos(rad)}
+                      y1={150 + r1 * Math.sin(rad)}
+                      x2={150 + r2 * Math.cos(rad)}
+                      y2={150 + r2 * Math.sin(rad)}
+                      stroke={isMajor ? (darkMode ? '#94a3b8' : '#475569') : (darkMode ? '#334155' : '#cbd5e1')}
+                      strokeWidth={isMajor ? 2 : (isMid ? 1.5 : 0.8)}
+                    />
+                  );
+                })}
+
+                {/* Yön harfleri */}
+                {[
+                  { label: 'K', angle: 0, color: '#ef4444', size: '18px', weight: '800' },
+                  { label: 'KD', angle: 45, color: darkMode ? '#64748b' : '#94a3b8', size: '11px', weight: '600' },
+                  { label: 'D', angle: 90, color: darkMode ? '#94a3b8' : '#64748b', size: '16px', weight: '700' },
+                  { label: 'GD', angle: 135, color: darkMode ? '#64748b' : '#94a3b8', size: '11px', weight: '600' },
+                  { label: 'G', angle: 180, color: darkMode ? '#94a3b8' : '#64748b', size: '16px', weight: '700' },
+                  { label: 'GB', angle: 225, color: darkMode ? '#64748b' : '#94a3b8', size: '11px', weight: '600' },
+                  { label: 'B', angle: 270, color: darkMode ? '#94a3b8' : '#64748b', size: '16px', weight: '700' },
+                  { label: 'KB', angle: 315, color: darkMode ? '#64748b' : '#94a3b8', size: '11px', weight: '600' },
+                ].map(({ label, angle, color, size, weight }) => {
+                  const r = label.length > 1 ? 104 : 106;
+                  const rad = (angle - 90) * Math.PI / 180;
+                  return (
+                    <text
+                      key={label}
+                      x={150 + r * Math.cos(rad)}
+                      y={150 + r * Math.sin(rad)}
+                      fill={color}
+                      fontSize={size}
+                      fontWeight={weight}
+                      fontFamily="system-ui, -apple-system, sans-serif"
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      transform={`rotate(${-compassRotation} ${150 + r * Math.cos(rad)} ${150 + r * Math.sin(rad)})`}
+                    >
+                      {label}
+                    </text>
+                  );
+                })}
+
+                {/* Kuzey üçgen işareti */}
+                <polygon
+                  points="150,22 145,35 155,35"
+                  fill="#ef4444"
+                />
+              </g>
+
+              {/* ─── SABİT KISIMLAR (dönmeyen) ─── */}
+              
+              {/* Üst yön çizgisi (sabit referans) */}
+              <line x1="150" y1="5" x2="150" y2="18" stroke={accent} strokeWidth="3" strokeLinecap="round" />
+
+              {/* Kıble oku */}
+              <g transform={`rotate(${qiblaRotation} 150 150)`} filter={isAligned ? 'url(#qiblaGlow)' : 'none'}>
+                {/* Ok gövdesi */}
+                <line x1="150" y1="150" x2="150" y2="45" stroke="url(#qiblaGrad)" strokeWidth="3.5" strokeLinecap="round" />
+                
+                {/* Ok ucu */}
+                <polygon points="150,35 142,55 150,47 158,55" fill="url(#qiblaGrad)" />
+                
+                {/* Kabe ikonu (ok ucunda) */}
+                <g transform="translate(150, 30)">
+                  <rect x="-7" y="-7" width="14" height="14" rx="2" fill={isAligned ? '#10b981' : '#059669'} stroke="#fff" strokeWidth="1.5" />
+                  <text x="0" y="1" fill="white" fontSize="10" textAnchor="middle" dominantBaseline="central">🕋</text>
+                </g>
+              </g>
+
+              {/* Merkez nokta */}
+              <circle cx="150" cy="150" r="8" fill={darkMode ? '#1e293b' : '#fff'} stroke={accent} strokeWidth="3" />
+              <circle cx="150" cy="150" r="3" fill={accent} />
+
+            </svg>
+          </div>
+
+          {/* Derece göstergesi */}
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <div style={{ fontSize: '40px', fontWeight: '800', color: accent, fontVariantNumeric: 'tabular-nums', letterSpacing: '-1px' }}>
+              {qiblaDirection.toFixed(1)}°
+            </div>
+            <div style={{ fontSize: '13px', color: textSec, marginTop: '2px' }}>
+              Kıble Açısı • {getDirectionName(qiblaDirection)}
+            </div>
+          </div>
+
+          {/* Bilgi Kartları */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+            {[
+              { icon: '🧭', label: 'Pusula', value: `${deviceHeading.toFixed(0)}°` },
+              { icon: '📍', label: 'Enlem', value: `${location.lat.toFixed(4)}°` },
+              { icon: '🗺️', label: 'Boylam', value: `${location.lng.toFixed(4)}°` },
+              { icon: '📐', label: 'Fark', value: `${Math.abs(shortAngleDist(deviceHeading, qiblaDirection)).toFixed(0)}°` },
+            ].map(({ icon, label, value }) => (
+              <div key={label} style={{
+                background: cardBg,
+                borderRadius: '12px',
+                padding: '12px',
+                boxShadow: darkMode ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
+                border: `1px solid ${darkMode ? '#334155' : '#e2e8f0'}`
+              }}>
+                <div style={{ fontSize: '12px', color: textSec, marginBottom: '4px' }}>{icon} {label}</div>
+                <div style={{ fontSize: '18px', fontWeight: '700', color: text, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
               </div>
-              <div style={styles.arrow}></div>
-              <div style={styles.compassCenter}></div>
-            </div>
+            ))}
           </div>
 
-          <div style={styles.infoCard}>
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Kıble Açısı:</span>
-              <span style={styles.infoValue}>{qiblaDirection.toFixed(1)}°</span>
+          {/* Kalibrasyon uyarısı */}
+          {calibrationNeeded && (
+            <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '12px', padding: '14px', marginBottom: '16px', textAlign: 'center' }}>
+              <div style={{ fontSize: '13px', color: '#92400e' }}>
+                ⚠️ Pusula kalibrasyonu gerekiyor. Telefonunuzu 8 şeklinde çevirin.
+              </div>
             </div>
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Enlem:</span>
-              <span style={styles.infoValue}>{location.lat.toFixed(4)}°</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Boylam:</span>
-              <span style={styles.infoValue}>{location.lng.toFixed(4)}°</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Mevcut Yön:</span>
-              <span style={styles.infoValue}>{deviceHeading.toFixed(0)}°</span>
-            </div>
-          </div>
+          )}
 
-          <button 
-            style={styles.button}
-            onClick={getLocation}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#047857'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#059669'}
-          >
+          {/* Yenile Butonu */}
+          <button onClick={getLocation} style={{
+            width: '100%', padding: '14px', background: accent, color: '#fff',
+            border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '600',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+          }}>
             🔄 Konumu Yenile
           </button>
 
-          <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: darkMode ? '#9ca3af' : '#6b7280' }}>
-            💡 Yeşil ok Kıble yönünü gösterir. Cihazınızı çevirerek oku takip edin.
+          <div style={{ textAlign: 'center', marginTop: '14px', fontSize: '12px', color: textSec, lineHeight: '1.5' }}>
+            Yeşil ok Kıble yönünü gösterir. Telefonunuzu düz tutarak okun yönüne dönün.
           </div>
         </>
       )}
