@@ -9,13 +9,13 @@ const DOWNLOADED_SOUNDS_KEY = 'downloaded_sounds';
 // ═══════════════════════════════════════════════════
 export const SOUND_OPTIONS = {
   adhan: [
-    // ── Yerel Ezanlar (APK ile birlikte) ──
-    { id: 'adhan1', name: 'Mekke Ezanı', file: 'adhan1.mp3', local: true },
-    { id: 'adhan2', name: 'Medine Ezanı', file: 'adhan2.mp3', local: true },
-    { id: 'adhan3', name: 'İstanbul Ezanı', file: 'adhan3.mp3', local: true },
-    { id: 'adhan4', name: 'Mısır Ezanı', file: 'adhan4.mp3', local: true },
-    { id: 'adhan5', name: 'Mescid-i Aksa', file: 'adhan5.mp3', local: true },
-    { id: 'adhan6', name: 'Abdulbasit', file: 'adhan6.mp3', local: true },
+    { id: 'adhan1', name: 'Ezan 1', file: 'adhan1.mp3', local: true },
+    { id: 'adhan2', name: 'Ezan 2', file: 'adhan2.mp3', local: true },
+    { id: 'adhan3', name: 'Ezan 3', file: 'adhan3.mp3', local: true },
+    { id: 'adhan4', name: 'Ezan 4', file: 'adhan4.mp3', local: true },
+    { id: 'adhan5', name: 'Ezan 5', file: 'adhan5.mp3', local: true },
+    { id: 'adhan6', name: 'Ezan 6', file: 'adhan6.mp3', local: true },
+    { id: 'adhan7', name: 'Ezan 7', file: 'adhan7.mp3', local: true },
     // ── İndirilebilir Ezanlar (islamcan.com) ──
     { id: 'adhan_dl_1', name: 'Ezan - Klasik', file: 'adhan_dl_1.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan1.mp3' },
     { id: 'adhan_dl_2', name: 'Ezan - Geleneksel', file: 'adhan_dl_2.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan2.mp3' },
@@ -40,10 +40,15 @@ export const SOUND_OPTIONS = {
     { id: 'adhan_dl_21', name: 'Ezan - Uzun Makam', file: 'adhan_dl_21.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan21.mp3' },
   ],
   notification: [
-    { id: 'notification1', name: 'Kısa Uyarı', file: 'notification1.mp3', local: true },
-    { id: 'notification2', name: 'Zil Sesi', file: 'notification2.mp3', local: true },
-    { id: 'notification3', name: 'Dijital Bip', file: 'notification3.mp3', local: true },
-    { id: 'notification4', name: 'Yumuşak Ton', file: 'notification4.mp3', local: true },
+    { id: 'notification1', name: 'Bildirim 1', file: 'notification1.mp3', local: true },
+    { id: 'notification2', name: 'Bildirim 2', file: 'notification2.mp3', local: true },
+    { id: 'notification3', name: 'Bildirim 3', file: 'notification3.mp3', local: true },
+    { id: 'notification4', name: 'Bildirim 4', file: 'notification4.mp3', local: true },
+    { id: 'notification5', name: 'Bildirim 5', file: 'notification5.mp3', local: true },
+    { id: 'notification6', name: 'Bildirim 6', file: 'notification6.mp3', local: true },
+    { id: 'notification7', name: 'Bildirim 7', file: 'notification7.mp3', local: true },
+    { id: 'notification8', name: 'Bildirim 8', file: 'notification8.mp3', local: true },
+    { id: 'notification9', name: 'Bildirim 9', file: 'notification9.mp3', local: true },
     { id: 'default', name: 'Sistem Varsayılanı', file: 'default', local: true }
   ]
 };
