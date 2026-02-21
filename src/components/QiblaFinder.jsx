@@ -13,6 +13,7 @@ const QiblaFinder = ({ darkMode }) => {
   const animFrameRef = useRef(null);
   const displayHeading = useRef(0);
   const targetHeading = useRef(0);
+  const lastSensorTime = useRef(0);
 
   const KAABA = { lat: 21.4225, lng: 39.8262 };
 
@@ -59,10 +60,13 @@ const QiblaFinder = ({ darkMode }) => {
     return diff;
   };
 
-  // Smooth animasyon döngüsü
+  // Smooth animasyon döngüsü - yavaş ve kararlı
   const animate = useCallback(() => {
     const diff = shortAngleDist(displayHeading.current, targetHeading.current);
-    displayHeading.current += diff * 0.12; // Lerp faktörü
+    // Küçük farkları yoksay (titreme önleme)
+    if (Math.abs(diff) > 0.3) {
+      displayHeading.current += diff * 0.05; // Yavaş lerp
+    }
     displayHeading.current = ((displayHeading.current % 360) + 360) % 360;
     setDeviceHeading(displayHeading.current);
     animFrameRef.current = requestAnimationFrame(animate);
@@ -99,7 +103,15 @@ const QiblaFinder = ({ darkMode }) => {
         setCalibrationNeeded(false);
       }
 
-      targetHeading.current = heading;
+      // Throttle: 80ms'de bir güncelle
+      const now = Date.now();
+      if (now - lastSensorTime.current < 80) return;
+      lastSensorTime.current = now;
+
+      // Low-pass filter: sensör verisini yumuşat
+      const diff = shortAngleDist(targetHeading.current, heading);
+      if (Math.abs(diff) < 1) return; // 1 dereceden az değişimi yoksay
+      targetHeading.current = ((targetHeading.current + diff * 0.3) % 360 + 360) % 360;
       
       if (compassTimeout) clearTimeout(compassTimeout);
       setHasCompass(true);
