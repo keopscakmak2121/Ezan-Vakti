@@ -40,24 +40,10 @@ export const SOUND_OPTIONS = {
     { id: 'adhan_dl_21', name: 'Ezan - Uzun Makam', file: 'adhan_dl_21.mp3', local: false, remoteUrl: 'https://www.islamcan.com/audio/adhan/azan21.mp3' },
   ],
   notification: [
-    // ── Yerel Bildirim Sesleri ──
     { id: 'notification1', name: 'Kısa Uyarı', file: 'notification1.mp3', local: true },
     { id: 'notification2', name: 'Zil Sesi', file: 'notification2.mp3', local: true },
     { id: 'notification3', name: 'Dijital Bip', file: 'notification3.mp3', local: true },
     { id: 'notification4', name: 'Yumuşak Ton', file: 'notification4.mp3', local: true },
-    // ── İndirilebilir Bildirim Sesleri ──
-    { id: 'notif_beep1', name: 'Kısa Bip', file: 'notif_beep1.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a7315b.mp3' },
-    { id: 'notif_chime', name: 'Modern Çan', file: 'notif_chime.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/03/15/audio_7302484f98.mp3' },
-    { id: 'notif_soft', name: 'Yumuşak Melodi', file: 'notif_soft.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2021/08/04/audio_03d98a2879.mp3' },
-    { id: 'notif_bird', name: 'Kuş Sesi', file: 'notif_bird.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2021/11/25/audio_91b32e01fa.mp3' },
-    { id: 'notif_bell', name: 'Çan Sesi', file: 'notif_bell.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2024/02/19/audio_e4043ea498.mp3' },
-    { id: 'notif_ding', name: 'Ding Dong', file: 'notif_ding.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2024/11/08/audio_c5badd5daa.mp3' },
-    { id: 'notif_gentle', name: 'Nazik Uyarı', file: 'notif_gentle.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/11/17/audio_fe4af1d2a0.mp3' },
-    { id: 'notif_piano', name: 'Piyano Notu', file: 'notif_piano.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/01/18/audio_8db1f1b5a3.mp3' },
-    { id: 'notif_magic', name: 'Sihirli Ses', file: 'notif_magic.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/07/05/audio_921e3de2dc.mp3' },
-    { id: 'notif_water', name: 'Su Damlası', file: 'notif_water.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/10/30/audio_3eb1ef7c6a.mp3' },
-    { id: 'notif_harp', name: 'Harp Tınısı', file: 'notif_harp.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/03/19/audio_80a4861c94.mp3' },
-    { id: 'notif_pop', name: 'Pop Efekti', file: 'notif_pop.mp3', local: false, remoteUrl: 'https://cdn.pixabay.com/audio/2022/03/24/audio_404dbc8aba.mp3' },
     { id: 'default', name: 'Sistem Varsayılanı', file: 'default', local: true }
   ]
 };

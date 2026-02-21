@@ -395,25 +395,8 @@ const NotificationSettings = ({
 
                 {/* Bildirim Sesleri */}
                 {notificationSettings.soundType === 'notification' && (
-                  <div>
-                    <div style={{ fontSize: '13px', color: '#059669', fontWeight: 'bold', marginBottom: '8px', marginTop: '10px' }}>
-                      📦 Yerel Sesler
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '15px' }}>
-                      {SOUND_OPTIONS.notification.filter(s => s.local && s.id !== 'default').map(sound => renderSoundCard(sound, 'notification'))}
-                    </div>
-
-                    <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: 'bold', marginBottom: '8px' }}>
-                      ☁️ İndirilebilir Sesler ({SOUND_OPTIONS.notification.filter(s => !s.local && s.id !== 'default').length} ses)
-                    </div>
-                    <div style={{ fontSize: '11px', color: textSec, marginBottom: '8px' }}>
-                      ▶ ile online dinleyin, 📥 ile indirin.
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
-                      {SOUND_OPTIONS.notification.filter(s => !s.local && s.id !== 'default').map(sound => renderSoundCard(sound, 'notification'))}
-                    </div>
-
-                    {renderSoundCard(SOUND_OPTIONS.notification.find(s => s.id === 'default'), 'notification')}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {SOUND_OPTIONS.notification.map(sound => renderSoundCard(sound, 'notification'))}
                   </div>
                 )}
               </>
