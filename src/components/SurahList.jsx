@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { allSurahs } from '../data/surahs';
 import { allJuz } from '../data/juz';
 import { getLastReadPosition } from '../utils/readingProgressStorage.js';
+import AudioMeal from './AudioMeal';
 
 // Kaldığın yer kartı
 const ResumeCard = ({ darkMode, onSurahClick, onJuzClick }) => {
@@ -153,10 +154,15 @@ const SurahList = ({ darkMode, onSurahClick, onJuzClick }) => {
           style={{ ...styles(darkMode).tabButton, ...(activeTab === 'juz' && styles(darkMode).activeTab) }}>
           Cüz
         </button>
+        <button onClick={() => setActiveTab('audio')}
+          style={{ ...styles(darkMode).tabButton, ...(activeTab === 'audio' && styles(darkMode).activeTab) }}>
+          🎧 Sesli Meal
+        </button>
       </div>
 
       {activeTab === 'surah' && <SurahsView darkMode={darkMode} onSurahClick={onSurahClick} />}
       {activeTab === 'juz' && <JuzView darkMode={darkMode} onJuzClick={onJuzClick} />}
+      {activeTab === 'audio' && <AudioMeal darkMode={darkMode} />}
     </div>
   );
 };
