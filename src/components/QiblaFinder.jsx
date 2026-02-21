@@ -60,12 +60,14 @@ const QiblaFinder = ({ darkMode }) => {
     return diff;
   };
 
-  // Smooth animasyon döngüsü - yavaş ve kararlı
+  // Smooth animasyon döngüsü - çok kararlı
   const animate = useCallback(() => {
     const diff = shortAngleDist(displayHeading.current, targetHeading.current);
-    // Küçük farkları yoksay (titreme önleme)
-    if (Math.abs(diff) > 0.3) {
-      displayHeading.current += diff * 0.05; // Yavaş lerp
+    // 0.5 dereceden az farkı yoksay
+    if (Math.abs(diff) > 0.5) {
+      // Fark büyükse biraz hızlan, küçükse çok yavaş git
+      const speed = Math.abs(diff) > 30 ? 0.06 : 0.03;
+      displayHeading.current += diff * speed;
     }
     displayHeading.current = ((displayHeading.current % 360) + 360) % 360;
     setDeviceHeading(displayHeading.current);
@@ -103,15 +105,16 @@ const QiblaFinder = ({ darkMode }) => {
         setCalibrationNeeded(false);
       }
 
-      // Throttle: 80ms'de bir güncelle
+      // Throttle: 150ms'de bir güncelle
       const now = Date.now();
-      if (now - lastSensorTime.current < 80) return;
+      if (now - lastSensorTime.current < 150) return;
       lastSensorTime.current = now;
 
-      // Low-pass filter: sensör verisini yumuşat
+      // Low-pass filter: 3 dereceden az değişimi yoksay
       const diff = shortAngleDist(targetHeading.current, heading);
-      if (Math.abs(diff) < 1) return; // 1 dereceden az değişimi yoksay
-      targetHeading.current = ((targetHeading.current + diff * 0.3) % 360 + 360) % 360;
+      if (Math.abs(diff) < 3) return;
+      // Ağır low-pass: sadece farkın %20'sini al
+      targetHeading.current = ((targetHeading.current + diff * 0.2) % 360 + 360) % 360;
       
       if (compassTimeout) clearTimeout(compassTimeout);
       setHasCompass(true);
