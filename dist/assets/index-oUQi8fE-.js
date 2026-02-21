@@ -1,0 +1,2 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["./web-DmqBz7HA.js","./index-3NrBwM68.js","./index-T5k-hgvO.css"])))=>i.map(i=>d[i]);
+import{r as i,_ as E}from"./index-3NrBwM68.js";var t;(function(e){e[e.HIGH=3]="HIGH",e[e.MEDIUM=2]="MEDIUM",e[e.LOW=1]="LOW",e[e.UNRELIABLE=0]="UNRELIABLE",e[e.UNKNOWN=-1]="UNKNOWN"})(t||(t={}));const _=i("CapgoCompass",{web:()=>E(()=>import("./web-DmqBz7HA.js"),__vite__mapDeps([0,1,2]),import.meta.url).then(e=>new e.CapgoCompassWeb)});export{_ as CapgoCompass,t as CompassAccuracy};

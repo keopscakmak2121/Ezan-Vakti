@@ -215,7 +215,9 @@ public class PrayerForegroundService extends Service implements SensorEventListe
     private void showFullScreenNotification(String name, String time) {
         try {
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "ezanvakti:alarm");
+            PowerManager.WakeLock wl = pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                "ezanvakti:alarm");
             wl.acquire(30000);
 
             Intent intent = new Intent(this, MainActivity.class);

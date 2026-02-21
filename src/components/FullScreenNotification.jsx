@@ -24,12 +24,20 @@ const FullScreenNotification = ({ prayerName, prayerTime, darkMode, onClose }) =
   [spiritualQuotes]);
 
   const prayerNamesTr = {
+    // İngilizce key'ler (JS fallback'tan gelir)
     Fajr: 'İmsak',
     Sunrise: 'Güneş',
     Dhuhr: 'Öğle',
     Asr: 'İkindi',
     Maghrib: 'Akşam',
-    Isha: 'Yatsı'
+    Isha: 'Yatsı',
+    // Türkçe key'ler (Native servis'ten gelir)
+    'İmsak': 'İmsak',
+    'Güneş': 'Güneş',
+    'Öğle': 'Öğle',
+    'İkindi': 'İkindi',
+    'Akşam': 'Akşam',
+    'Yatsı': 'Yatsı'
   };
 
   const handleClose = () => {
